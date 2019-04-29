@@ -26,13 +26,14 @@ prefix = 'total_data/'
 defaultclock.dt = .05*ms
 
 #number of images to run
-num_examples = 3 #len(training)
+num_examples = 100 #len(training)
 
 #plot some diagnostics at the end
 plot = True
 
 #-----------------------------------------------------------
-#tunable params
+#Tunable Parameters: the parameters to change in the network
+
 
 #0-10
 numbers_to_inc = frozenset([0, 1])
@@ -40,10 +41,10 @@ numbers_to_inc = frozenset([0, 1])
 #size of network 
 N_AL = 784 #must be >= 784
 N_KC = 7840
-N_BL = 2
+N_BL = 2 #should be the same as the number of classes
 
 #learning rate
-eta = 0.01
+eta = 0.1 #fraction of total conductance per spike
 
 """
 Amount of inhibition between AL Neurons.
@@ -59,11 +60,12 @@ ex_ALKC = .2
 ex_KCBL = 1.5
 
 #Lateral inhibition beta lobe
-in_BLBL = 2.0
+in_BLBL = 4.0
 
 
 #excitation KC->GGN
-ex_KCGGN = 0.02
+ex_KCGGN = 0.01
+
 #inhibition GGN->KC
 in_GGNKC = 0.2
 
@@ -85,6 +87,7 @@ bin_thresh = 150 #threshold for binary
 taupre = 10*ms #width of STDP
 taupost = taupre
 
+#save the parameters to load in for testing
 tunable_params = {'numbers_to_inc': numbers_to_inc,
                   'N_AL': N_AL,
                   'N_KC': N_KC,
@@ -110,6 +113,7 @@ pickle.dump( tunable_params, open(prefix+"connections/tunable_params.p", "wb" ) 
 
 #--------------------------------------------------------
 
+#Antennal Lobe parameters
 al_para = dict(N = N_AL,
                g_syn = in_AL,
                neuron_class = nm.n_FitzHugh_Nagumo, 
@@ -118,21 +122,25 @@ al_para = dict(N = N_AL,
                mon = ['V']
               )
 
+#Kenyon cell parameters
 kc_para = dict( N = N_KC,
                 neuron_class = nm.n_lif,
                 mon = []
                 )
 
+#GGN parameters
 ggn_para = dict(N = 1,
 				neuron_class = nm.n_li,
 				mon = ['v'])
 
+#Beta lobe neuron parameters
 bl_para = dict(N = N_BL,
 			   g_syn = in_BLBL,
 			   neuron_class = nm.n_lif,
 			   syn_class = nm.s_lif_in,
 			   mon = ['v'])
 
+#connect all the layers together
 conn_para = dict(synALKC_class = nm.s_lif_ex,
                  ex_ALKC = ex_ALKC,
                  synKCGGN_class = nm.s_lif_ex,
@@ -147,6 +155,7 @@ conn_para = dict(synALKC_class = nm.s_lif_ex,
                  PALKC = PALKC,
                  PKCBL = PKCBL)
 
+#create the network object
 net = Network()
 
 G_AL, S_AL, trace_AL, spikes_AL = lm.get_AL(al_para, net)
@@ -176,6 +185,7 @@ num_tot_images = len(training['x'])
 imgs = training['x']
 labels = training['y']
 
+#run the network
 j = 0
 for i in range(num_tot_images):
     if labels[i][0] in numbers_to_inc:
@@ -206,6 +216,7 @@ for i in range(num_tot_images):
 store(name = 'trained', filename = prefix+'connections/trained')
 
 
+#save some of the data
 np.savez(prefix+'connections/S_AL.npz', i = S_AL.i, j = S_AL.j)
 np.savez(prefix+'connections/S_KCBL.npz', i = S_KCBL.i, j = S_KCBL.j)
 np.savez(prefix+'connections/S_ALKC.npz', i = S_ALKC.i, j = S_ALKC.j)
@@ -227,37 +238,48 @@ np.save(prefix+'output/traceGGN_V', trace_GGN.v)
 
 np.save(prefix+'output/weights', S_KCBL.w_syn)
 
+#plot diagnostics
 if plot:
     fig1 = plt.figure()
     plt.plot(spikes_AL.t/ms, spikes_AL.i, '.')
-    plt.title('Spikes AL train')
+    plt.title('Spikes AL')
+    plt.xlabel('Time (ms)')
+    plt.ylabel('Neuron Number')
     fig1.savefig(prefix+'images/spikes_AL_train.png', bbox_inches = 'tight')
 
     fig2 = plt.figure()
     plt.plot(spikes_KC.t/ms, spikes_KC.i, '.')
-    plt.title('Spikes KC train')
+    plt.title('Spikes KC')
+    plt.xlabel('Time (ms)')
+    plt.ylabel('Neuron Number')
     fig2.savefig(prefix+'images/spikes_KC_train.png', bbox_inches = 'tight')
 
     fig3 = plt.figure()
     plt.plot(spikes_BL.t/ms, spikes_BL.i, '.')
-    plt.title('Spikes BL train')
+    plt.title('Spikes BL')
+    plt.xlabel('Time (ms)')
+    plt.ylabel('Neuron Number')
     plt.ylim(-0.5, N_BL-0.5)
     fig3.savefig(prefix+'images/spikes_BL_train.png', bbox_inches = 'tight')
 
     fig4 = plt.figure()
     hist(S_KCBL.w_syn / ex_KCBL, 20)
     xlabel('Weight / gmax')
-    plt.title('weights BL train')
+    plt.title('Weights BL')
     fig4.savefig(prefix+'images/weights_BL_train.png', bbox_inches = 'tight')
 
     fig5 = plt.figure()
     plt.plot(trace_GGN.t/ms,trace_GGN.v[0]/mV)
     plt.title('Trace GGN')
+    plt.xlabel('Time (ms)')
+    plt.ylabel('Membrane Voltage (mV)')
     fig5.savefig(prefix+'images/trace_GGN_train.png', bbox_inches = 'tight')
 
     fig6 = plt.figure()
     plt.plot(trace_AL.t/ms, mean(trace_AL.V, axis = 0)/mV)
-    plt.title('Trace AL train')
+    plt.title('LFP AL')
+    plt.xlabel('Time (ms)')
+    plt.ylabel('Membrane Voltage (mV)')
     fig6.savefig(prefix+'images/lfp_AL_train.png', bbox_inches = 'tight')
 
     fig7 = plt.figure()

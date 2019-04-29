@@ -8,6 +8,36 @@ from brian2 import *
 '''
 naming convention:  all neurons start with n followed by the name
 of the neuron
+
+Each neuron class needs to have the following functions defined
+
+def eqs(self):
+    return string of equations in Brian format
+
+def namespace(self):
+    return dictionary of variables defined in eqs/threshold...etc
+
+def threshold(self):
+    return string 'V > thresh' with voltage that neuron spikes or None
+
+def refractory(self):
+    return string or number defining length of time that voltage above
+    threshold does not register as spike.  Note this does not change
+    behavior of membrane potential unless specified.
+
+def reset(self):
+    return voltage that neuron returns to after reaching threshold
+
+def method(self):
+    return string 'rk4' or other method of integration
+
+def state_mon(self):
+    return array of variables in string format e.g ['V'] that tell
+    the simulation to record the value of that variable
+
+def init_cond(self):
+    return dict(v = self.vr) dictionary of variables and their initial
+    conditions
 '''
 class n_FitzHugh_Nagumo:
 
@@ -133,6 +163,7 @@ class n_lif:
 
 
 #leaky integrate (non spiking)
+#Non-linear excitatory synapses
 class n_li:
 
     #GGN
@@ -188,6 +219,21 @@ class n_li:
 '''
 naming convention:  all synapses start with s, followed by the name of
 the synapse, followed by excitation or inhibition
+
+def eqs(self):
+    return string of equations in Brian format
+
+def onpre(self):
+    return string of equations to execute in the event of a pre-synaptic spike
+
+def onpost(self):
+    return string of equations to execute in the event of a post-synaptic spike
+
+def namespace(self):
+    return dictionary of the variables and their values
+
+def init_cond(self):
+    return initial conditions of the variables
 '''
 class s_FitzHughNagumo_inh:
     
