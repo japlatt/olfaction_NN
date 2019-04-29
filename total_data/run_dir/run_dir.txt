@@ -1,0 +1,1 @@
+This is the run directory where the c code is compiled if you have the code run in C++ standalone format
