@@ -5,6 +5,7 @@ import cPickle as pickle
 import neuron_models as nm
 import lab_manager as lm
 import experiments as ex
+from sklearn.utils import shuffle as rshuffle
 
 import time
 import skimage
@@ -184,6 +185,8 @@ n_input = training['rows']*training['cols'] #28x28=784
 num_tot_images = len(training['x'])
 imgs = training['x']
 labels = training['y']
+
+imgs, labels = rshuffle(imgs, labels)
 
 #run the network
 j = 0
