@@ -343,6 +343,8 @@ class s_lifSTDP_ex:
         self.g_syn = conduct
         self.dApre = eta*conduct
         self.dApost = -eta*conduct * taupre / taupost * 1.05
+        self.taupre = taupre
+        self.taupost = taupost
         return
 
     def eqs(self):
@@ -367,7 +369,9 @@ class s_lifSTDP_ex:
     def namespace(self):
         return dict(g_syn = self.g_syn,
                     dApre = self.dApre,
-                    dApost = self.dApost)
+                    dApost = self.dApost,
+                    taupre = self.taupre,
+                    taupost = self.taupost)
 
     def init_cond(self):
         return dict(w_syn = 'rand()*g_syn')
