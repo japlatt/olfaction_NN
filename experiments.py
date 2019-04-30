@@ -1,7 +1,11 @@
 import numpy as np
 import os.path
 from struct import unpack
-import cPickle as pickle
+import sys
+if sys.version_info[0] < 3:
+    import cPickle as pickle
+else:
+    import pickle
 
 '''
 Random constant current input

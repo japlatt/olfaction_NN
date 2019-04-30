@@ -1,6 +1,12 @@
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
-import cPickle as pickle
+import sys
+
+if sys.version_info[0] < 3:
+    import cPickle as pickle
+else:
+    import pickle
 
 import neuron_models as nm
 import lab_manager as lm
@@ -22,11 +28,11 @@ plt.style.use('ggplot')
 
 start_scope()
 
-'''To run you need to download 
+'''To run you need to download
 the MNIST dataset from http://yann.lecun.com/exdb/mnist/'''
 
 #path to the data folder
-MNIST_data_path = '/Users/Jason/Desktop/Mothnet/MNIST_data/'
+MNIST_data_path = 'data_set/'
 # MNIST_data_path = '/home/jplatt/Mothnet/MNIST_data/'
 
 #path to folder to save data
@@ -184,13 +190,13 @@ for i in range(num_tot_images):
         padding = N_AL - n_input
         I = np.pad(linear, (0,padding), 'constant', constant_values=(0,0))
         G_AL.I_inj = I*nA
-        
+
         net.run(time_per_image*ms, report = 'text')
 
         max_act = 0
         pred = -1
         trains = spikes_BL.spike_trains()
-        for k in xrange(len(trains)):
+        for k in range(len(trains)):
             if len(trains[k]) > max_act:
                 pred = k
                 max_act = len(trains[k])
@@ -205,5 +211,5 @@ for (label, pred) in pred_vec:
     if label == pred:
         acc+=1
 acc = acc*1.0/num_examples
-print acc
+print(acc)
 np.savetxt(prefix+'predictions.txt', pred_vec)
