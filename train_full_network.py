@@ -1,13 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import cPickle as pickle
+import sys
+
+if sys.version_info[0] < 3:
+    import cPickle as pickle
+else:
+    import pickle
 
 import neuron_models as nm
 import lab_manager as lm
 import experiments as ex
 
 import time
-import skimage
+#import skimage
 
 from brian2 import *
 
@@ -16,7 +21,7 @@ plt.style.use('ggplot')
 
 start_scope()
 #path to the data folder
-MNIST_data_path = '/Users/Jason/Desktop/Mothnet/MNIST_data/'
+MNIST_data_path = 'data_set/'
 # MNIST_data_path = '/home/jplatt/Mothnet/MNIST_data/'
 
 #path to folder to save data
