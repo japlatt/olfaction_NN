@@ -10,6 +10,7 @@ else:
 import neuron_models as nm
 import lab_manager as lm
 import experiments as ex
+from sklearn.utils import shuffle as rshuffle
 
 import time
 #import skimage
@@ -31,7 +32,7 @@ prefix = 'total_data/'
 defaultclock.dt = .05*ms
 
 #number of images to run
-num_examples = 100 #len(training)
+num_examples = int(raw_input('Number of images to train: ')) #len(training)
 
 #plot some diagnostics at the end
 plot = True
@@ -56,7 +57,7 @@ Amount of inhibition between AL Neurons.
 Enforces WLC dynamics and needs to be scaled
 with the size of the network
 """
-in_AL = 0.15
+in_AL = 0.17
 
 '''Excititation between AL -> KCs'''
 ex_ALKC = .2
@@ -83,7 +84,7 @@ PALKC = 0.01
 #KCs->BLs
 PKCBL = 0.3
 
-input_intensity = 0.2 #scale input
+input_intensity = 0.15 #scale input
 time_per_image = 80 #ms
 reset_time = 15 #ms
 
@@ -189,6 +190,8 @@ n_input = training['rows']*training['cols'] #28x28=784
 num_tot_images = len(training['x'])
 imgs = training['x']
 labels = training['y']
+
+imgs, labels = rshuffle(imgs, labels)
 
 #run the network
 j = 0

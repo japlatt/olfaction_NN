@@ -42,7 +42,7 @@ prefix = 'total_data/'
 defaultclock.dt = .05*ms
 
 #number of images to run
-num_examples = 5 #len(training)
+num_examples = int(raw_input('Number of images to test: ')) #len(training)
 
 #plot some diagnostics at the end
 plot = True
