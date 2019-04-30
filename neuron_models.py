@@ -95,7 +95,7 @@ class n_FitzHugh_Nagumo:
         return self.states_to_mon
     
     def init_cond(self):
-        return  dict(V = -1.2*mV, w = -0.62*mV, z = 0.0)
+        return  dict(V = -1.2*mV, w = -0.62*mV, z = 'rand()')
 
 
 
