@@ -216,6 +216,8 @@ class n_li:
         return dict(v = self.vr)
 
 
+#classic NaKL neuron
+#4 dimensional
 class n_HH:
 
     C_m = 1.*uF/cm**2 # membrane capacitance, unit: uFcm^-2
@@ -261,8 +263,8 @@ class n_HH:
     def eqs(self):
         eqns_AL = '''
                     dV/dt = -1/C_m*(g_L*(V - E_L) + g_Na*m**3*h*(V - E_Na) \
-                            + g_K*n**4*(V - E_K) - I + I_syn): volt
-                    I: amp/meter**2
+                            + g_K*n**4*(V - E_K) - I_inj + I_syn): volt
+                    I_inj: amp/meter**2
                     I_syn: amp/meter**2
                     dm/dt = (xm-m)/tm : 1
                     xm = 0.5*(1+tanh((V - vm)/dvm)) : 1
@@ -342,6 +344,9 @@ def onpost(self):
 def namespace(self):
     return dictionary of the variables and their values
 
+def method(self):
+    return method liek 'rk4'
+
 def getDelay(self):
     return value*ms which is the delay of the synapse
     Note: only works for synapses with an onpre function that doesn't return None
@@ -373,6 +378,9 @@ class s_FitzHughNagumo_inh:
     def namespace(self):
         return None
 
+    def method(self):
+        return 'rk4'
+
     def getDelay(self):
         return self.delay
 
@@ -400,6 +408,9 @@ class s_lif_ex:
     def namespace(self):
         return None
 
+    def method(self):
+        return 'rk4'
+
     def getDelay(self):
         return self.delay
 
@@ -425,6 +436,9 @@ class s_lif_in:
 
     def namespace(self):
         return None
+
+    def method(self):
+        return 'rk4'
 
     def getDelay(self):
         return self.delay
@@ -457,6 +471,9 @@ class s_gapjunc_in:
 
     def namespace(self):
         return None
+
+    def method(self):
+        return 'rk4'
 
     def init_cond(self):
         return dict(w = self.g_syn)
@@ -506,8 +523,107 @@ class s_lifSTDP_ex:
                     taupre = self.taupre,
                     taupost = self.taupost)
 
+    def method(self):
+        return 'rk4'
+
     def getDelay(self):
         return self.delay
 
     def init_cond(self):
         return dict(w_syn = 'rand()*g_syn')
+
+
+class s_glu_ex:
+
+    E_glu = -38.0*mV
+    alphaR = 2.4/ms
+    betaR = 0.56/ms
+    Tm = 1.0
+    Kp = 5.0*mV
+    Vp = 7.0*mV
+
+    delay = 0*ms
+
+    def __init__(self, conduct):
+        self.g_syn = conduct
+        return
+        
+    def eqs(self):
+        syn =   '''
+                gNt: siemens/meter**2
+                I_syn_post = gNt*r*(V - E_glu): amp/meter**2 (summed)
+                dr/dt = (alphaR*Tm/(1+exp(-(V_pre - Vp)/Kp)))*(1-r) - betaR*r : 1 (clock-driven)
+                '''
+        return syn
+
+    def onpre(self):
+        return None
+
+    def onpost(self):
+        return None
+        
+    def namespace(self):
+        return dict(E_glu = self.E_glu,
+                    alphaR = self.alphaR,
+                    betaR = self.betaR,
+                    Tm = self.Tm,
+                    Kp = self.Kp,
+                    Vp = self.Vp)
+
+    def method(self):
+        return 'rk4'
+
+    def getDelay(self):
+        return self.delay
+
+    def init_cond(self):
+        return {'gNt': self.g_syn,
+                'r': 'rand()'}
+class s_GABA_inh:
+
+    E_gaba = -80.0*mV
+    alphaR = 5.0/ms
+    betaR = 0.18/ms
+    Tm = 1.5
+    Kp = 5.0*mV
+    Vp = 7.0*mV
+
+    delay = 0*ms
+
+    def __init__(self, conduct):
+        self.g_syn = conduct
+        return
+        
+    def eqs(self):
+        syn =   '''
+                gNt: siemens/meter**2
+                I_syn_post = gNt*r*(V - E_gaba): amp/meter**2 (summed)
+                dr/dt = (alphaR*Tm/(1+exp(-(V_pre - Vp)/Kp)))*(1-r) - betaR*r : 1 (clock-driven)
+                '''
+        return syn
+
+    def onpre(self):
+        return None
+
+    def onpost(self):
+        return None
+        
+    def namespace(self):
+        return dict(E_gaba = self.E_gaba,
+                    alphaR = self.alphaR,
+                    betaR = self.betaR,
+                    Tm = self.Tm,
+                    Kp = self.Kp,
+                    Vp = self.Vp)
+
+    def method(self):
+        return 'rk4'
+
+    def getDelay(self):
+        return self.delay
+
+    def init_cond(self):
+        return {'gNt': self.g_syn,
+                'r': 'rand()'}
+
+
