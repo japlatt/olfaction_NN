@@ -214,6 +214,116 @@ class n_li:
 
     def init_cond(self):
         return dict(v = self.vr)
+
+
+class n_HH:
+
+    C_m = 1.*uF/cm**2 # membrane capacitance, unit: uFcm^-2
+    # Conductances
+    g_L = 0.3*msiemens/cm**2 # Max. leak conductance, unit: mScm^-2
+    g_Na = 120*msiemens/cm**2 # Max. Na conductance, unit: mScm^-2
+    g_K = 20*msiemens/cm**2 # Max. K conductance, unit: mScm^-2
+
+    # Nernst/reversal potentials
+    E_L = -54.4*mV # Leak Nernst potential, unit: mV
+    E_Na = 50*mV # Na Nernst potential, unit: mV
+    E_K = -77*mV # K Nernst potential, unit: mV
+
+    # Half potentials of gating variables
+    vm = -40*mV # m half potential, unit: mV
+    vh = -60*mV # h half potential, unit: mV
+    vn = -55*mV # n half potential, unit: mV
+
+    # Voltage response width (sigma)
+    dvm = 15.0*mV # m voltage response width, unit: mV
+    dvn = 30.0*mV
+    dvh = -15.0*mV
+
+    # time constants
+    tm0 = 0.1*ms # unit ms
+    tm1 = 0.4*ms
+    th0 = 1.*ms
+    th1 = 7.*ms
+    tn0 = 1.*ms
+    tn1 = 5.*ms
+
+    thresh = -20*mV
+    refrac = -20*mV
+
+
+    states_to_mon = ['V']
+
+
+    def __init__(self, mon):
+        self.states_to_mon = mon
+        return
+    
+    def eqs(self):
+        eqns_AL = '''
+                    dV/dt = -1/C_m*(g_L*(V - E_L) + g_Na*m**3*h*(V - E_Na) \
+                            + g_K*n**4*(V - E_K) - I + I_syn): volt
+                    I: amp/meter**2
+                    I_syn: amp/meter**2
+                    dm/dt = (xm-m)/tm : 1
+                    xm = 0.5*(1+tanh((V - vm)/dvm)) : 1
+                    tm = tm0+tm1*(1-tanh((V - vm)/dvm)**2) : second
+                    
+                    dh/dt = (xh-h)/th : 1
+                    xh = 0.5*(1+tanh((V - vh)/dvh)) : 1
+                    th = th0+th1*(1-tanh((V - vh)/dvh)**2): second
+                    
+                    dn/dt = (xn-n)/tn : 1
+                    xn = 0.5*(1+tanh((V - vn)/dvn)) : 1
+                    tn = tn0+tn1*(1-tanh((V - vn)/dvn)**2) : second
+                    '''
+        return eqns_AL
+
+    def namespace(self):
+        namespace = dict(C_m = self.C_m,
+                         g_L = self.g_L,
+                         g_Na = self.g_Na,
+                         g_K = self.g_K,
+                         E_L = self.E_L,
+                         E_Na = self.E_Na,
+                         E_K = self.E_K,
+                         vm = self.vm,
+                         vh = self.vh,
+                         vn = self.vn,
+                         dvm = self.dvm,
+                         dvn = self.dvn,
+                         dvh = self.dvh,
+                         tm0 = self.tm0,
+                         tm1 = self.tm1,
+                         th0 = self.th0,
+                         th1 = self.th1,
+                         tn0 = self.tn0,
+                         tn1 = self.tn1,
+                         refrac = self.refrac,
+                         thresh = self.thresh)
+                    
+        return namespace
+
+    def threshold(self):
+        return 'V > thresh'
+
+    def refractory(self):
+        return 'V >= refrac'
+
+    def reset(self):
+        return None
+
+    def method(self):
+        return 'rk4'
+
+    def state_mon(self):
+        return self.states_to_mon
+    
+    def init_cond(self):
+        return  dict(V = -60*mV,
+                     m = 'rand()',
+                     h = 'rand()',
+                     n = 'rand()')
+
 #-----------------------------------------------------------------
 #SYNAPSES
 '''
@@ -232,13 +342,19 @@ def onpost(self):
 def namespace(self):
     return dictionary of the variables and their values
 
+def getDelay(self):
+    return value*ms which is the delay of the synapse
+    Note: only works for synapses with an onpre function that doesn't return None
+
 def init_cond(self):
     return initial conditions of the variables
 '''
 class s_FitzHughNagumo_inh:
     
-    def __init__(self, cond):
-        self.g_syn = cond
+    delay = 0*ms
+
+    def __init__(self, conduct):
+        self.g_syn = conduct
         return
         
     def eqs(self):
@@ -257,11 +373,16 @@ class s_FitzHughNagumo_inh:
     def namespace(self):
         return None
 
+    def getDelay(self):
+        return self.delay
+
     def init_cond(self):
         return {'g_syn': self.g_syn}
 
 
 class s_lif_ex:
+
+    delay = 0*ms
 
     def __init__(self, conduct):
         self.g_syn = conduct
@@ -279,10 +400,15 @@ class s_lif_ex:
     def namespace(self):
         return None
 
+    def getDelay(self):
+        return self.delay
+
     def init_cond(self):
         return dict(w_syn = self.g_syn)
 
 class s_lif_in:
+
+    delay = 0*ms
 
     def __init__(self, conduct):
         self.g_syn = conduct
@@ -300,11 +426,16 @@ class s_lif_in:
     def namespace(self):
         return None
 
+    def getDelay(self):
+        return self.delay
+
     def init_cond(self):
         return dict(w_syn = self.g_syn)
 
 
 class s_gapjunc_in:
+
+    delay = 0*ms
 
     def __init__(self, conduct):
         self.g_syn = conduct
@@ -333,6 +464,8 @@ class s_gapjunc_in:
 
 #Empirical STDP
 class s_lifSTDP_ex:
+
+    delay = 0*ms
 
     '''
     conduct: max conductance
@@ -372,6 +505,9 @@ class s_lifSTDP_ex:
                     dApost = self.dApost,
                     taupre = self.taupre,
                     taupost = self.taupost)
+
+    def getDelay(self):
+        return self.delay
 
     def init_cond(self):
         return dict(w_syn = 'rand()*g_syn')

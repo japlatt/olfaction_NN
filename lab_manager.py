@@ -62,6 +62,7 @@ def connect_network(conn_params, states, net, train = True):
 
 
     S_KCBL.set_states(KCBL_synapses.init_cond())
+    S_KCBL.delay = KCBL_synapses.getDelay()
 
     net.add(S_ALKC, S_KCGGN, S_GGNKC, S_KCBL)
 
