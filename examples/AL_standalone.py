@@ -55,8 +55,6 @@ for k in range(3):
 
 spikes_t_arr, spikes_i_arr, I_arr, trace_V_arr, trace_t_arr = anal.load_wlc_data(prefix, num_runs = 3)
 
-PCAdata = anal.doPCA(trace_V_arr, k = 3)
-
 fig1 = plt.figure()
 plt.plot(spikes_t_arr[0]/ms, spikes_i_arr[0], '.')
 plt.plot(spikes_t_arr[1]/ms, spikes_i_arr[1], '.')
@@ -68,11 +66,19 @@ fig1.savefig('spikes_AL.pdf', bbox_inches = 'tight')
 
 fig2 = plt.figure()
 plt.plot(trace_t_arr[0]/ms, mean(trace_V_arr[0], axis = 0)/mV)
-plt.title('Trace AL')
+plt.title('LFP AL')
 plt.xlabel('Time (ms)')
 plt.ylabel('Membrane Voltage (mV)')
 fig2.savefig('lfp_AL.pdf', bbox_inches = 'tight')
 
-anal.plotPCA(PCAdata, N_AL, el = 30, az = 30, skip = 1, start = 50)
+PCAdata = anal.doPCA(trace_V_arr, k = 3)
+anal.plotPCA(PCAdata, N_AL, el = 30, az = 0, skip = 1, start = 50)
 
-plt.show()
+
+anal.getMIM(trace_V_arr) #takes a long time
+MIM = np.load('MIM.npy')
+data = np.hstack(trace_V_arr).T
+length = len(trace_V_arr[0][0])
+
+InCAdata = anal.doInCA(MIM, data, length, skip = 1, k = 3)
+anal.plotInCA(InCAdata, N_AL, start = 400)
