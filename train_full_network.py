@@ -19,6 +19,18 @@ from brian2 import *
 
 plt.style.use('ggplot')
 
+#compile into C++ standalone
+#TODO: not working yet
+comp = False
+
+# C++ standalone code to run quicker
+if comp:
+    set_device('cpp_standalone', build_on_run=False)
+
+# Parallelize using OpenMP. Might not work....
+# also only works with C++ standalone/comp = True
+# prefs.devices.cpp_standalone.openmp_threads = 4
+
 
 start_scope()
 #path to the data folder
@@ -218,8 +230,9 @@ for i in range(num_tot_images):
     if j == num_examples:
         break
 
-# # run if built in C++ standalone
-# # device.build(directory=prefix+'run_dir', compile=True, run=True, debug=False)
+# run if built in C++ standalone
+if comp:
+    device.build(directory=prefix+'run_dir', compile=True, run=True, debug=False)
 
 store(name = 'trained', filename = prefix+'connections/trained')
 

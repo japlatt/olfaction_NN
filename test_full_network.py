@@ -19,8 +19,11 @@ from brian2 import *
 plt.style.use('ggplot')
 
 
+comp = False
 # C++ standalone code to run quicker
-# set_device('cpp_standalone', build_on_run=False)
+#TODO: not working yet
+if comp:
+    set_device('cpp_standalone', build_on_run=False)
 
 # Parallelize using OpenMP. Might not work....
 # prefs.devices.cpp_standalone.openmp_threads = 4
@@ -204,6 +207,10 @@ for i in range(num_tot_images):
         pred_vec.append((labels[i][0], pred))
     if j == num_examples:
         break
+
+# run if built in C++ standalone
+if comp:
+    device.build(directory=prefix+'run_dir', compile=True, run=True, debug=False)
 
 print(pred_vec)
 acc = 0

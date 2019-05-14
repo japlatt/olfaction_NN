@@ -10,7 +10,8 @@ def connect_network(conn_params, states, net, train = True):
                       model = ALKC_synapses.eqs(),
                       on_pre = ALKC_synapses.onpre(),
                       on_post = ALKC_synapses.onpost(),
-                      namespace = ALKC_synapses.namespace())
+                      namespace = ALKC_synapses.namespace(),
+                      method = ALKC_synapses.method())
 
 
     if train:
@@ -27,7 +28,8 @@ def connect_network(conn_params, states, net, train = True):
                       model = KCGGN_synapses.eqs(),
                       on_pre = KCGGN_synapses.onpre(),
                       on_post = KCGGN_synapses.onpost(),
-                      namespace = KCGGN_synapses.namespace())
+                      namespace = KCGGN_synapses.namespace(),
+                      method = KCGGN_synapses.method())
 
     S_KCGGN.connect()
     S_KCGGN.set_states(KCGGN_synapses.init_cond())
@@ -38,7 +40,8 @@ def connect_network(conn_params, states, net, train = True):
                       model = GGNKC_synapses.eqs(),
                       on_pre = GGNKC_synapses.onpre(),
                       on_post = GGNKC_synapses.onpost(),
-                      namespace = GGNKC_synapses.namespace())
+                      namespace = GGNKC_synapses.namespace(),
+                      method = GGNKC_synapses.method())
 
     S_GGNKC.connect()
     S_GGNKC.set_states(GGNKC_synapses.init_cond())
@@ -52,7 +55,8 @@ def connect_network(conn_params, states, net, train = True):
                       model = KCBL_synapses.eqs(),
                       on_pre = KCBL_synapses.onpre(),
                       on_post = KCBL_synapses.onpost(),
-                      namespace = KCBL_synapses.namespace())
+                      namespace = KCBL_synapses.namespace(),
+                      method = KCBL_synapses.method())
 
     if train:
         S_KCBL.connect(p = conn_params['PKCBL'])
@@ -62,6 +66,7 @@ def connect_network(conn_params, states, net, train = True):
 
 
     S_KCBL.set_states(KCBL_synapses.init_cond())
+    S_KCBL.delay = KCBL_synapses.getDelay()
 
     net.add(S_ALKC, S_KCGGN, S_GGNKC, S_KCBL)
 
@@ -101,7 +106,8 @@ def get_AL(AL_params, net, train = True):
                  model = eqns_syn,
                  on_pre = AL_synapses.onpre(),
                  on_post = AL_synapses.onpost(),
-                 namespace = AL_synapses.namespace())
+                 namespace = AL_synapses.namespace(),
+                 method = AL_synapses.method())
 
     if train:
         S_AL.connect(condition='i != j', p = AL_params['PAL'])
@@ -188,7 +194,8 @@ def get_BL(BL_params, net):
              model = BL_synapses.eqs(),
              on_pre = BL_synapses.onpre(),
              on_post = BL_synapses.onpost(),
-             namespace = BL_synapses.namespace())
+             namespace = BL_synapses.namespace(),
+             method = BL_synapses.method())
     
     S_BL.connect(condition='i != j')
 

@@ -216,6 +216,7 @@ class n_li:
         return dict(v = self.vr)
 
 
+<<<<<<< HEAD
 class n_Projection_Neuron:
 
     #global variables for all instances of the class
@@ -257,6 +258,44 @@ class n_Projection_Neuron:
     # ---- double check this for PN neurons
     thresh = 0*mV
     refrac = -0.5*mV
+=======
+#classic NaKL neuron
+#4 dimensional
+class n_HH:
+
+    C_m = 1.*uF/cm**2 # membrane capacitance, unit: uFcm^-2
+    # Conductances
+    g_L = 0.3*msiemens/cm**2 # Max. leak conductance, unit: mScm^-2
+    g_Na = 120*msiemens/cm**2 # Max. Na conductance, unit: mScm^-2
+    g_K = 20*msiemens/cm**2 # Max. K conductance, unit: mScm^-2
+
+    # Nernst/reversal potentials
+    E_L = -54.4*mV # Leak Nernst potential, unit: mV
+    E_Na = 50*mV # Na Nernst potential, unit: mV
+    E_K = -77*mV # K Nernst potential, unit: mV
+
+    # Half potentials of gating variables
+    vm = -40*mV # m half potential, unit: mV
+    vh = -60*mV # h half potential, unit: mV
+    vn = -55*mV # n half potential, unit: mV
+
+    # Voltage response width (sigma)
+    dvm = 15.0*mV # m voltage response width, unit: mV
+    dvn = 30.0*mV
+    dvh = -15.0*mV
+
+    # time constants
+    tm0 = 0.1*ms # unit ms
+    tm1 = 0.4*ms
+    th0 = 1.*ms
+    th1 = 7.*ms
+    tn0 = 1.*ms
+    tn1 = 5.*ms
+
+    thresh = -20*mV
+    refrac = -20*mV
+
+>>>>>>> upstream/master
 
     states_to_mon = ['V']
 
@@ -267,22 +306,46 @@ class n_Projection_Neuron:
 
     def eqs(self):
         eqns_AL = '''
-                    I_inj : amp
-                    I_syn : 1
-                    dV/dt = (V-(V**3)/(3*mV**2) - w - z*(V - nu) + 0.35*mV + I_inj*Mohm)/t1 : volt
-                    dw/dt = (V - b*w + a*mV)/ms : volt
-                    dz/dt = (I_syn - z)/t2 : 1
+                    dV/dt = -1/C_m*(g_L*(V - E_L) + g_Na*m**3*h*(V - E_Na) \
+                            + g_K*n**4*(V - E_K) - I_inj + I_syn): volt
+                    I_inj: amp/meter**2
+                    I_syn: amp/meter**2
+                    dm/dt = (xm-m)/tm : 1
+                    xm = 0.5*(1+tanh((V - vm)/dvm)) : 1
+                    tm = tm0+tm1*(1-tanh((V - vm)/dvm)**2) : second
+
+                    dh/dt = (xh-h)/th : 1
+                    xh = 0.5*(1+tanh((V - vh)/dvh)) : 1
+                    th = th0+th1*(1-tanh((V - vh)/dvh)**2): second
+
+                    dn/dt = (xn-n)/tn : 1
+                    xn = 0.5*(1+tanh((V - vn)/dvn)) : 1
+                    tn = tn0+tn1*(1-tanh((V - vn)/dvn)**2) : second
                     '''
         return eqns_AL
 
     def namespace(self):
-        namespace = {'nu': self.nu,
-                     'a' : self.a,
-                     'b' : self.b,
-                     't1': self.t1,
-                     't2': self.t2,
-                     'refrac': self.refrac,
-                     'thresh': self.thresh}
+        namespace = dict(C_m = self.C_m,
+                         g_L = self.g_L,
+                         g_Na = self.g_Na,
+                         g_K = self.g_K,
+                         E_L = self.E_L,
+                         E_Na = self.E_Na,
+                         E_K = self.E_K,
+                         vm = self.vm,
+                         vh = self.vh,
+                         vn = self.vn,
+                         dvm = self.dvm,
+                         dvn = self.dvn,
+                         dvh = self.dvh,
+                         tm0 = self.tm0,
+                         tm1 = self.tm1,
+                         th0 = self.th0,
+                         th1 = self.th1,
+                         tn0 = self.tn0,
+                         tn1 = self.tn1,
+                         refrac = self.refrac,
+                         thresh = self.thresh)
 
         return namespace
 
@@ -302,7 +365,11 @@ class n_Projection_Neuron:
         return self.states_to_mon
 
     def init_cond(self):
-        return  dict(V = -1.2*mV, w = -0.62*mV, z = 'rand()')
+        return  dict(V = -60*mV,
+                     m = 'rand()',
+                     h = 'rand()',
+                     n = 'rand()')
+
 #-----------------------------------------------------------------
 #SYNAPSES
 '''
@@ -321,6 +388,13 @@ def onpost(self):
 def namespace(self):
     return dictionary of the variables and their values
 
+def method(self):
+    return method liek 'rk4'
+
+def getDelay(self):
+    return value*ms which is the delay of the synapse
+    Note: only works for synapses with an onpre function that doesn't return None
+
 def init_cond(self):
     return initial conditions of the variables
 '''
@@ -328,6 +402,11 @@ class s_FitzHughNagumo_inh:
 
     def __init__(self, cond):
         self.g_syn = cond
+
+    delay = 0*ms
+
+    def __init__(self, conduct):
+        self.g_syn = conduct
         return
 
     def eqs(self):
@@ -346,11 +425,19 @@ class s_FitzHughNagumo_inh:
     def namespace(self):
         return None
 
+    def method(self):
+        return 'rk4'
+
+    def getDelay(self):
+        return self.delay
+
     def init_cond(self):
         return {'g_syn': self.g_syn}
 
 
 class s_lif_ex:
+
+    delay = 0*ms
 
     def __init__(self, conduct):
         self.g_syn = conduct
@@ -368,10 +455,18 @@ class s_lif_ex:
     def namespace(self):
         return None
 
+    def method(self):
+        return 'rk4'
+
+    def getDelay(self):
+        return self.delay
+
     def init_cond(self):
         return dict(w_syn = self.g_syn)
 
 class s_lif_in:
+
+    delay = 0*ms
 
     def __init__(self, conduct):
         self.g_syn = conduct
@@ -389,11 +484,19 @@ class s_lif_in:
     def namespace(self):
         return None
 
+    def method(self):
+        return 'rk4'
+
+    def getDelay(self):
+        return self.delay
+
     def init_cond(self):
         return dict(w_syn = self.g_syn)
 
 
 class s_gapjunc_in:
+
+    delay = 0*ms
 
     def __init__(self, conduct):
         self.g_syn = conduct
@@ -416,12 +519,17 @@ class s_gapjunc_in:
     def namespace(self):
         return None
 
+    def method(self):
+        return 'rk4'
+
     def init_cond(self):
         return dict(w = self.g_syn)
 
 
 #Empirical STDP
 class s_lifSTDP_ex:
+
+    delay = 0*ms
 
     '''
     conduct: max conductance
@@ -462,5 +570,105 @@ class s_lifSTDP_ex:
                     taupre = self.taupre,
                     taupost = self.taupost)
 
+    def method(self):
+        return 'rk4'
+
+    def getDelay(self):
+        return self.delay
+
     def init_cond(self):
         return dict(w_syn = 'rand()*g_syn')
+
+
+class s_glu_ex:
+
+    E_glu = -38.0*mV
+    alphaR = 2.4/ms
+    betaR = 0.56/ms
+    Tm = 1.0
+    Kp = 5.0*mV
+    Vp = 7.0*mV
+
+    delay = 0*ms
+
+    def __init__(self, conduct):
+        self.g_syn = conduct
+        return
+
+    def eqs(self):
+        syn =   '''
+                gNt: siemens/meter**2
+                I_syn_post = gNt*r*(V - E_glu): amp/meter**2 (summed)
+                dr/dt = (alphaR*Tm/(1+exp(-(V_pre - Vp)/Kp)))*(1-r) - betaR*r : 1 (clock-driven)
+                '''
+        return syn
+
+    def onpre(self):
+        return None
+
+    def onpost(self):
+        return None
+
+    def namespace(self):
+        return dict(E_glu = self.E_glu,
+                    alphaR = self.alphaR,
+                    betaR = self.betaR,
+                    Tm = self.Tm,
+                    Kp = self.Kp,
+                    Vp = self.Vp)
+
+    def method(self):
+        return 'rk4'
+
+    def getDelay(self):
+        return self.delay
+
+    def init_cond(self):
+        return {'gNt': self.g_syn,
+                'r': 'rand()'}
+class s_GABA_inh:
+
+    E_gaba = -80.0*mV
+    alphaR = 5.0/ms
+    betaR = 0.18/ms
+    Tm = 1.5
+    Kp = 5.0*mV
+    Vp = 7.0*mV
+
+    delay = 0*ms
+
+    def __init__(self, conduct):
+        self.g_syn = conduct
+        return
+        
+    def eqs(self):
+        syn =   '''
+                gNt: siemens/meter**2
+                I_syn_post = gNt*r*(V - E_gaba): amp/meter**2 (summed)
+                dr/dt = (alphaR*Tm/(1+exp(-(V_pre - Vp)/Kp)))*(1-r) - betaR*r : 1 (clock-driven)
+                '''
+        return syn
+
+    def onpre(self):
+        return None
+
+    def onpost(self):
+        return None
+
+    def namespace(self):
+        return dict(E_gaba = self.E_gaba,
+                    alphaR = self.alphaR,
+                    betaR = self.betaR,
+                    Tm = self.Tm,
+                    Kp = self.Kp,
+                    Vp = self.Vp)
+
+    def method(self):
+        return 'rk4'
+
+    def getDelay(self):
+        return self.delay
+
+    def init_cond(self):
+        return {'gNt': self.g_syn,
+                'r': 'rand()'}
