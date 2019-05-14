@@ -57,7 +57,7 @@ class n_FitzHugh_Nagumo:
     def __init__(self, mon):
         self.states_to_mon = mon
         return
-    
+
     def eqs(self):
         eqns_AL = '''
                     I_inj : amp
@@ -76,7 +76,7 @@ class n_FitzHugh_Nagumo:
                      't2': self.t2,
                      'refrac': self.refrac,
                      'thresh': self.thresh}
-                    
+
         return namespace
 
     def threshold(self):
@@ -93,7 +93,7 @@ class n_FitzHugh_Nagumo:
 
     def state_mon(self):
         return self.states_to_mon
-    
+
     def init_cond(self):
         return  dict(V = -1.2*mV, w = -0.62*mV, z = 'rand()')
 
@@ -103,7 +103,7 @@ class n_FitzHugh_Nagumo:
 #non-linear excitatory synapses
 #gap junction inhibitory synapses
 class n_lif:
-    taum = 10*ms #membrane 
+    taum = 10*ms #membrane
 
     vt = -50*mV #threshold for spike
     vr = -74*mV #resting/reset potential
@@ -116,7 +116,7 @@ class n_lif:
 
     refKC = 2*ms
 
-    
+
 
     def __init__(self, mon):
         self.states_to_mon = mon
@@ -168,7 +168,7 @@ class n_li:
 
     #GGN
 
-    taum = 10*ms #membrane 
+    taum = 10*ms #membrane
     vr = -74*mV #resting/reset potential
 
     Ee = 0*mV
@@ -214,6 +214,95 @@ class n_li:
 
     def init_cond(self):
         return dict(v = self.vr)
+
+
+class n_Projection_Neuron:
+
+    #global variables for all instances of the class
+    Cm = 142.0*pF
+
+    #Maximum conductances
+    gNa = 7150.0*nS
+    gK = 1430.0*nS
+    gL= 21.0*nS
+    gKL = 5.72*nS
+    gA = 1430.0*nS
+
+    #Reversal potentials
+    ENa = 50.0*mV
+    EK = -95.0*mV
+    EL = -55.0*mV
+    EKL = -95.0*mV
+
+    #Gating Variable m parameters
+    Vm = -43.9*mV
+    dm = 7.4*mV
+    Vmt = -47.5*mV
+    dmt = 40.0*mV
+    tm0 = 0.024*ms
+    tm1 = 0.093*ms
+
+    #Gating Variable h parameters
+    Vh = -48.3*mV
+    dh = 4.0*mV
+    Vht = -56.8*mV
+    dht = 16.9*mV
+    th0 = 0.0*ms
+    th1 = 5.6*ms
+
+    shift = 70.0*mV
+
+
+
+    # ---- double check this for PN neurons
+    thresh = 0*mV
+    refrac = -0.5*mV
+
+    states_to_mon = ['V']
+
+
+    def __init__(self, mon):
+        self.states_to_mon = mon
+        return
+
+    def eqs(self):
+        eqns_AL = '''
+                    I_inj : amp
+                    I_syn : 1
+                    dV/dt = (V-(V**3)/(3*mV**2) - w - z*(V - nu) + 0.35*mV + I_inj*Mohm)/t1 : volt
+                    dw/dt = (V - b*w + a*mV)/ms : volt
+                    dz/dt = (I_syn - z)/t2 : 1
+                    '''
+        return eqns_AL
+
+    def namespace(self):
+        namespace = {'nu': self.nu,
+                     'a' : self.a,
+                     'b' : self.b,
+                     't1': self.t1,
+                     't2': self.t2,
+                     'refrac': self.refrac,
+                     'thresh': self.thresh}
+
+        return namespace
+
+    def threshold(self):
+        return 'V > thresh'
+
+    def refractory(self):
+        return 'V >= refrac'
+
+    def reset(self):
+        return None
+
+    def method(self):
+        return 'rk4'
+
+    def state_mon(self):
+        return self.states_to_mon
+
+    def init_cond(self):
+        return  dict(V = -1.2*mV, w = -0.62*mV, z = 'rand()')
 #-----------------------------------------------------------------
 #SYNAPSES
 '''
@@ -236,11 +325,11 @@ def init_cond(self):
     return initial conditions of the variables
 '''
 class s_FitzHughNagumo_inh:
-    
+
     def __init__(self, cond):
         self.g_syn = cond
         return
-        
+
     def eqs(self):
         syn = '''
                 g_syn: 1
@@ -253,7 +342,7 @@ class s_FitzHughNagumo_inh:
 
     def onpost(self):
         return None
-        
+
     def namespace(self):
         return None
 
