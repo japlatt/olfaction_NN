@@ -62,9 +62,10 @@ class n_FitzHugh_Nagumo:
         eqns_AL = '''
                     I_inj : amp
                     I_syn : 1
-                    dV/dt = (V-(V**3)/(3*mV**2) - w - z*(V - nu) + 0.35*mV + I_inj*Mohm)/t1 : volt
+                    dV/dt = (V-(V**3)/(3*mV**2) - w - z*(V - nu) + 0.35*mV + I_inj*active*Mohm)/t1 : volt
                     dw/dt = (V - b*w + a*mV)/ms : volt
                     dz/dt = (I_syn - z)/t2 : 1
+                    active : 1
                     '''
         return eqns_AL
 
@@ -216,49 +217,357 @@ class n_li:
         return dict(v = self.vr)
 
 
-<<<<<<< HEAD
+
 class n_Projection_Neuron:
 
     #global variables for all instances of the class
-    Cm = 142.0*pF
+    C_m = 142.0*pF
 
     #Maximum conductances
-    gNa = 7150.0*nS
-    gK = 1430.0*nS
+    g_Na = 7150.0*nS
+    g_K = 1430.0*nS
     gL= 21.0*nS
-    gKL = 5.72*nS
-    gA = 1430.0*nS
+    g_KL = 5.72*nS
+    g_A = 1430.0*nS
 
     #Reversal potentials
-    ENa = 50.0*mV
-    EK = -95.0*mV
-    EL = -55.0*mV
-    EKL = -95.0*mV
+    E_Na = 50.0*mV
+    E_K = -95.0*mV
+    E_L = -55.0*mV
+    E_KL = -95.0*mV
 
     #Gating Variable m parameters
-    Vm = -43.9*mV
-    dm = 7.4*mV
-    Vmt = -47.5*mV
-    dmt = 40.0*mV
+    vm = -43.9*mV
+    dvm = 7.4*mV
+    vmt = -47.5*mV
+    dvmt = 40.0*mV
     tm0 = 0.024*ms
     tm1 = 0.093*ms
 
     #Gating Variable h parameters
-    Vh = -48.3*mV
-    dh = 4.0*mV
-    Vht = -56.8*mV
-    dht = 16.9*mV
+    vh = -48.3*mV
+    dvh = 4.0*mV
+    vht = -56.8*mV
+    dvht = 16.9*mV
     th0 = 0.0*ms
     th1 = 5.6*ms
+
+    #Gating Variable n parameters
+    van = 35.1*mV
+    san = 5.0*mV
+    can = 0.016/ms
+    vbn = 20.0*mV
+    sbn = 40.0*mV
+    cbn = 0.25/ms
+
+    #Gating Variable z parameters
+    vz = -60.0*mV
+    dvz = -8.5*mV
+    tzv1 = -35.8*mV
+    tzd1 = 19.7*mV
+    tzv2 = -79.7*mV
+    tzd2 = 12.7*mV
+
+    #Gating Variable u parameters
+    vu = -78.0*mV
+    dvu = 6.0*mV
+    tuv1 = -46.0*mV
+    tud1 = 5.0*mV
+    tuv2 = -238.0*mV
+    tud2 = 37.5*mV
+    tuv3 = -57.0*mV
+    tud3 = 3.0*mV
+    ctu1 = 0.27*ms
+    ctu2 = 5.1*ms
+
+    #
 
     shift = 70.0*mV
 
 
+    # ---- double check this for PN neurons
+    thresh = -5*mV
+    refrac = -5*mV
+
+
+    states_to_mon = ['V']
+
+
+    def __init__(self, mon):
+        self.states_to_mon = mon
+        return
+
+    def eqs(self):
+        eqns_PN = '''
+                    dV/dt = -1/C_m*(g_L*(V - E_L) + g_Na*m**3*h*(V - E_Na) \
+                            + g_K*n*(V - E_K) + g_A*z**4*u*(V - E_K)  + g_KL*(V - E_K) - I_inj + I_syn): volt
+                    I_inj: amp
+                    I_syn: amp
+
+                    dm/dt = (xm-m)/tm : 1
+                    xm = 0.5*(1 - tanh(0.5*(V - vm)/dvm)) : 1
+                    tm = tm0+tm1*(1-tanh((V - vm)/dvm)**2) : second
+
+                    dh/dt = (xh-h)/th : 1
+                    xh = 0.5*(1-tanh(0.5*(V - vh)/dvh)) : 1
+                    th = th0+th1*(1-tanh((V - vh)/dvh)**2): second
+
+                    dn/dt = an*(1-n) - bn*n : 1
+                    an = can*(V - van + shift)/(1-exp(-(V-van)/san)) : 1/second
+                    bn = cbn*exp(-(V - vbn + shift)/sbn) : 1/second
+
+                    dz/dt = (xz - z)/tz : 1
+                    xz = 0.5*(1-tanh(0.5*(V-vz)/dvz)) : 1
+                    tz = 1/(exp((V-tzv1)/tzd1) + exp(-(V-tzv1)/tzd2) + 0.37) : second
+
+                    du/dt = (xu - u)/tu : 1
+                    xu = 0.5*(1-tanh(0.5*(V - vu)/dvu)) : 1
+                    tu = ctu1/(exp((V-tuv1)/tud1) + exp(-(V-tuv2)/tud2)) + ctu2/2*(1+tanh((V-tuv3)/tud3)) : second
+
+                    '''
+        return eqns_PN
+
+    def namespace(self):
+        namespace = dict(C_m = self.C_m,
+                         g_L = self.g_L,
+                         g_Na = self.g_Na,
+                         g_K = self.g_K,
+                         g_KL = self.g_KL,
+                         E_L = self.E_L,
+                         E_Na = self.E_Na,
+                         E_K = self.E_K,
+                         E_KL = self.E_KL,
+                         vm = self.vm,
+                         vmt = self.vmt,
+                         vh = self.vh,
+                         vht = self.vht,
+                         dvm = self.dvm,
+                         dvmt = self.dvmt,
+                         dvh = self.dvh,
+                         dvht = self.dvht,
+                         tm0 = self.tm0,
+                         tm1 = self.tm1,
+                         th0 = self.th0,
+                         th1 = self.th1,
+                         van = self.van,
+                         san = self.san,
+                         can = self.can,
+                         vbn = self.vbn,
+                         sbn = self.sbn,
+                         cbn = self.cbn,
+                         vz = self.vz,
+                         dvz = self.dvz,
+                         tzv1 = self.tzv1,
+                         tzd1 = self.tzd1,
+                         tzv2 = self.tzv2,
+                         tzd2 = self.tzd2,
+                         vu = self.vu,
+                         dvu = self.dvu,
+                         tuv1 = self.tuv1,
+                         tud1 = self.tud1,
+                         tuv2 = self.tuv2,
+                         tud2 = self.tud2,
+                         tuv3 = self.tuv3,
+                         tud3 = self.tud3,
+                         ctu1 = self.ctu1,
+                         ctu2 = self.ctu2,
+                         shift = self.shift,
+                         refrac = self.refrac,
+                         thresh = self.thresh)
+
+        return namespace
+
+    def threshold(self):
+        return 'V > thresh'
+
+    def refractory(self):
+        return 'V >= refrac'
+
+    def reset(self):
+        return None
+
+    def method(self):
+        return 'rk4'
+
+    def state_mon(self):
+        return self.states_to_mon
+
+    def init_cond(self):
+        return  dict(V = -65*mV,
+                     m = 'rand()',
+                     h = 'rand()',
+                     n = 'rand()',
+                     z = 'rand()',
+                     u = 'rand()')
+
+class n_Local_Neuron:
+
+    #global variables for all instances of the class
+    C_m = 142.0*pF
+
+    #Maximum conductances
+    g_K = 1000.0*nS
+    gL= 21.5*nS
+    g_KL = 1.43*nS
+    g_Ca = 290.0*nS
+    g_KCa = 35.8*nS
+
+    #Reversal potentials
+    E_K = -95.0*mV
+    E_L = -50.0*mV
+    E_KL = -95.0*mV
+    E_Ca = 140.0*mV
+
+    #Gating Variable n parameters
+    van = -35.0*mV
+    san = 5.0*mV
+    can = 0.02/ms
+    vbn = -20.0*mV
+    sbn = 40.0*mV
+    cbn = 0.5/ms
+
+    #Gating Variable s parameters
+    vs = -20.0*mV
+    dvs = -6.5*mV
+    ts = 1.5*ms
+
+    # Gating Variable v parameters
+    vv = -25.0*mV
+    dvv = 12.0*mV
+    tvc1 = 0.3*ms
+    tvv1 = 40*mV
+    tvd1 = 13.0*mV
+    tvc2 = 0.002*ms
+    tvv2 = 60.0*mV
+    tvd2 = 29.0*mV
+
+    #Gating Variable u parameters
+    vu = -78.0*mV
+    dvu = 6.0*mV
+    tuv1 = -46.0*mV
+    tud1 = 5.0*mV
+    tuv2 = -238.0*mV
+    tud2 = 37.5*mV
+
+    #Gating Vairable q parameters
+    k = 2.0*uM
+    tqc = 100*uM*ms
+
+    #Calicum parameters
+    phi = 2.86e-6*uM/(ms*pA)
+    Cai = 0.24*uM
+    tCa = 150*ms
+
+    scale = 1
+    #
+
+
 
     # ---- double check this for PN neurons
-    thresh = 0*mV
-    refrac = -0.5*mV
-=======
+    thresh = -28*mV
+    refrac = -28*mV
+
+
+    states_to_mon = ['V']
+
+
+    def __init__(self, mon):
+        self.states_to_mon = mon
+        return
+
+    def eqs(self):
+        eqns_LN = '''
+                    dV/dt = -1/C_m*(g_L*(V - E_L) + g_KCa*q*(V - E_KCa)  \
+                            + g_K*n**4*(V - E_K) + g_Ca*s**2*v*(V - E_Ca) \
+                            + g_KL*(V - E_K) - I_inj + I_syn): volt
+                    I_inj: amp
+                    I_syn: amp
+
+                    dCa/dt = -phi*g_Ca*s**2*v*(V-E_Ca) - (Ca - Cai)/tCa: M
+
+                    dn/dt = (xn - n)/tn : 1
+                    xn = an/(an + bn) : 1
+                    tn = 4.65/(an + bn) : second
+                    an = can*((V - van)/(1-exp(-(V-van)/san)) : 1/second
+                    bn = cbn*exp(-(V - vbn)/sbn) : 1/second
+
+                    ds/dt = (xs - s)/ts : 1
+                    xs = 0.5*(1-tanh(0.5*(V-vs)/dvs)) : 1
+
+                    dv/dt = (xv - v)/tv : 1
+                    xv = 0.5*(1-tanh(0.5*(V - vv)/dvv)) : 1
+                    tv = tvc1*exp((V-tvv1)/tvd1) + tvc2*exp(-(V-tvv2)/tvd2) : second
+
+                    dq/dt = (xq - q)/tq : 1
+                    xq = Ca/(Ca + k) : 1
+                    tq = tqc/(Ca + k) : second
+
+                    '''
+        return eqns_LN
+
+    def namespace(self):
+        namespace = dict(C_m = self.C_m,
+                         g_L = self.g_L,
+                         g_K = self.g_K,
+                         g_KL = self.g_KL,
+                         g_Ca = self.g_Ca,
+                         g_KCa = self.g_KCa,
+                         E_L = self.E_L,
+                         E_K = self.E_K,
+                         E_KL = self.E_KL,
+                         E_Ca = self.E_Ca,
+                         E_KCa = self.E_KCa,
+                         van = self.van,
+                         san = self.san,
+                         can = self.can,
+                         vbn = self.vbn,
+                         sbn = self.sbn,
+                         cbn = self.cbn,
+                         vs = self.vs,
+                         dvs = self.dvs,
+                         ts = self.ts,
+                         vv = self.vv,
+                         dvv = self.dvv,
+                         tvv1 = self.tvv1,
+                         tvd1 = self.tvd1,
+                         tvc1 = self.tvc1,
+                         tvv2 = self.tvv2,
+                         tvd2 = self.tvd2,
+                         tvc2 = self.tvc2,
+                         phi = self.phi,
+                         Cai = self.Cai,
+                         tCa = self.tCa,
+                         k = self.k,
+                         tqc = self.tqc,
+                         refrac = self.refrac,
+                         thresh = self.thresh,
+                         scale = self.scale)
+
+        return namespace
+
+    def threshold(self):
+        return 'V > thresh'
+
+    def refractory(self):
+        return 'V >= refrac'
+
+    def reset(self):
+        return None
+
+    def method(self):
+        return 'rk4'
+
+    def state_mon(self):
+        return self.states_to_mon
+
+    def init_cond(self):
+        return  dict(V = -60*mV,
+                     Ca = 'rand()'*mV,
+                     n = 'rand()',
+                     s = 'rand()',
+                     v = 'rand()',
+                     q = 'rand()')
+
 #classic NaKL neuron
 #4 dimensional
 class n_HH:
@@ -295,7 +604,8 @@ class n_HH:
     thresh = -20*mV
     refrac = -20*mV
 
->>>>>>> upstream/master
+    scale = 1
+
 
     states_to_mon = ['V']
 
@@ -345,7 +655,8 @@ class n_HH:
                          tn0 = self.tn0,
                          tn1 = self.tn1,
                          refrac = self.refrac,
-                         thresh = self.thresh)
+                         thresh = self.thresh,
+                         scale = self.scale)
 
         return namespace
 
@@ -640,7 +951,7 @@ class s_GABA_inh:
     def __init__(self, conduct):
         self.g_syn = conduct
         return
-        
+
     def eqs(self):
         syn =   '''
                 gNt: siemens/meter**2
@@ -672,3 +983,129 @@ class s_GABA_inh:
     def init_cond(self):
         return {'gNt': self.g_syn,
                 'r': 'rand()'}
+
+class s_PN_ex:
+
+    E_syn = 0.0*mV
+    r1 = 1.5
+    tau = 1.0*ms
+
+    #E_glu = -38.0*mV
+    #alphaR = 2.4/ms
+    #betaR = 0.56/ms
+    #Tm = 1.0
+    Kp = 1.5*mV
+    #Kp = 5.0*mV # maybe this?
+    #Vp = 7.0*mV # maybe should switch to this?
+    Vp = 0.0*mV
+
+    delay = 0*ms
+
+    def __init__(self, conduct):
+        self.g_syn = conduct
+        return
+
+    def eqs(self):
+        syn =   '''
+                gNt: siemens
+                I_syn_post = gNt*r*(V - E_syn): amp (summed)
+                dr/dt = (xr - r)/(tau*(r1 - xr)) : 1 (clock-driven)
+                xr = 0.5*(1-tanh(-0.5*(Vpre-Vp)/Kp)) : 1 (clock-driven)
+                '''
+        return syn
+
+    def onpre(self):
+        return None
+
+    def onpost(self):
+        return None
+
+    def namespace(self):
+        return dict(E_syn = self.E_syn,
+                    tau = self.tau,
+                    r1 = self.r1,
+                    Kp = self.Kp,
+                    Vp = self.Vp)
+
+    def method(self):
+        return 'rk4'
+
+    def getDelay(self):
+        return self.delay
+
+    def init_cond(self):
+        return {'gNt': self.g_syn,
+                'r': 'rand()'}
+
+
+class s_LN_inh:
+
+    g_slow = 125*nS
+    E_gaba = -70.0*mV
+    E_K = -95.0*mV
+    alphaR = 10.0/ms
+    betaR = 0.16/ms
+    dvra = 1.5*mV
+    vra = -20.0*mV
+    dvrb = 5.0*mV
+    vrb = 2.0*mV
+
+    s1 = 1.0/ms
+    s2 = 0.0025/ms
+    s3 = 0.1/ms
+    s4 = 0.06/ms
+
+    K = 100.0*uM**4
+
+
+
+    delay = 0*ms
+
+    def __init__(self, conduct):
+        self.g_syn = conduct
+        return
+
+    def eqs(self):
+        syn =   '''
+                gNt: siemens
+                I_syn_post = gNt*r*(V - E_gaba) + g_slow*G**4/(G**4 + K)*(V - E_K) : amp (summed)
+                dr/dt = alphaR/(1+exp(-(V_pre - vra)/dvra))*(1-r) - betaR*r : 1 (clock-driven)
+                ds/dt = s1*(1-s)/(1+exp(-(V-vrb)/dvrb)) - s2*s : 1 (clock-driven)
+                dG/dt = s3*s - s4*G : M (clock-driven)
+
+                '''
+        return syn
+
+    def onpre(self):
+        return None
+
+    def onpost(self):
+        return None
+
+    def namespace(self):
+        return dict(E_gaba = self.E_gaba,
+                    E_K = self.E_K,
+                    g_slow = self.g_slow,
+                    alphaR = self.alphaR,
+                    betaR = self.betaR,
+                    dvra = self.dvra,
+                    vra = self.vra,
+                    dvrb = self.dvrb,
+                    vrb = self.vrb,
+                    s1 = self.s1,
+                    s2 = self.s2,
+                    s3 = self.s3,
+                    s4 = self.s4,
+                    K = self.K)
+
+    def method(self):
+        return 'rk4'
+
+    def getDelay(self):
+        return self.delay
+
+    def init_cond(self):
+        return {'gNt': self.g_syn,
+                'r': 'rand()',
+                's': 'rand()',
+                'G': 'rand()'*uM}

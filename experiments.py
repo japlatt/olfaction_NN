@@ -20,8 +20,9 @@ def get_rand_I(N, p, I_inp):
     return I
 
 
+
 '''
-MNIST helper function to load and unpack MNIST data.  To run you need to download 
+MNIST helper function to load and unpack MNIST data.  To run you need to download
 the MNIST dataset from http://yann.lecun.com/exdb/mnist/.
 
 picklename: name of file to write/read data from
@@ -65,3 +66,14 @@ def get_labeled_data(picklename, MNIST_data_path, bTrain = True):
         data = {'x': x, 'y': y, 'rows': rows, 'cols': cols}
         pickle.dump(data, open("%s.pickle" % picklename, "wb"), -1)
     return data
+'''
+Takes name of file containing input stimulus and converts it to timedarray to
+be used as input. Needs filename, dt with units, and the unit of the stimulus.
+'''
+def recorded_input(filename,dt,unit):
+    if filename[-3:] is 'npy':
+        stim = np.load(filename)
+    else:
+        stim = np.loadtxt(filename)
+    stim = TimedArray(stim*unit,dt=dt)
+    return stim

@@ -77,18 +77,18 @@ def connect_network(conn_params, states, net, train = True):
 
 
 def get_AL(AL_params, net, train = True):
-    
+
     N_AL = AL_params['N']
     g_syn = AL_params['g_syn']
-    
+
     AL_neuron = AL_params['neuron_class'](AL_params['mon'])
     AL_synapses = AL_params['syn_class'](g_syn)
-    
+
     eqns_neuron = AL_neuron.eqs()
 
 
     eqns_syn = AL_synapses.eqs()
-    
+
     G_AL = NeuronGroup(N_AL,
                     model = eqns_neuron,
                     threshold = AL_neuron.threshold(),
@@ -96,12 +96,12 @@ def get_AL(AL_params, net, train = True):
                     refractory = AL_neuron.refractory(),
                     reset = AL_neuron.reset(),
                     namespace = AL_neuron.namespace())
-    
+
     trace_AL = StateMonitor(G_AL, AL_neuron.state_mon(), record=True)
     spikes_AL = SpikeMonitor(G_AL)
-    
+
     G_AL.set_states(AL_neuron.init_cond())
-    
+
     S_AL = Synapses(G_AL, G_AL,
                  model = eqns_syn,
                  on_pre = AL_synapses.onpre(),
@@ -116,10 +116,100 @@ def get_AL(AL_params, net, train = True):
         S_AL.connect(i = S_AL_conn['i'], j = S_AL_conn['j'])
 
     S_AL.set_states(AL_synapses.init_cond())
-    
+
     net.add(G_AL, S_AL, trace_AL, spikes_AL)
-    
+
     return [G_AL, S_AL, trace_AL, spikes_AL]
+
+# A function to obtain a more biological antennal lobe with separate excitatory
+# and inhibitory neurons
+def get_bioAL(AL_params, net):
+    N_PN = AL_params['N_PN']
+    N_LN = AL_params['N_LN']
+    g_inh = AL_params['g_syn_inh']
+    g_ex = AL_params['g_syn_ex']
+
+    PN_neuron = AL_params['neuron_class_ex'](AL_params['mon'])
+    LN_neuron = AL_params['neuron_class_inh'](AL_params['mon'])
+    PN_synapses = AL_params['syn_class_ex'](g_ex)
+    LN_synapses = AL_params['syn_class_inh'](g_inh)
+
+    eqs_PN = PN_neuron.eqs()
+    eqs_LN = LN_neuron.eqs()
+
+    eqs_syn_PN = PN_synapses.eqs()
+    eqs_syn_LN = LN_synapses.eqs()
+
+
+
+    G_PN = NeuronGroup(N_PN,
+                    model = eqs_PN,
+                    threshould = PN_neuron.threshold(),
+                    method = PN_neuron.method(),
+                    refractory = PN_neuron.refractory(),
+                    reset = PN_neuron.reset(),
+                    namespace = PN_neuron.namespace())
+
+    G_LN = NeuronGroup(N_LN,
+                    model = eqs_LN,
+                    threshould = LN_neuron.threshold(),
+                    method = LN_neuron.method(),
+                    refractory = LN_neuron.refractory(),
+                    reset = LN_neuron.reset(),
+                    namespace = LN_neuron.namespace())
+
+    trace_PN = StateMonitor(G_PN,PN_neuron.state_mon(),record = True)
+    trace_LN = StateMonitor(G_LN,LN_neuron.state_mon(),record = True)
+
+    spikes_PN = SpikeMonitor(G_PN)
+    spikes_LN = SpikeMonitor(G_LN)
+
+    G_PN.set_states(PN_neuron.init_cond())
+    G_LN.set_states(LN_neuron.init_cond())
+
+    # Connect LNs to LNs
+    S_LN = Synases(G_LN, G_LN,
+                    model = eqs_syn_LN,
+                    on_pre = LN_synapses.onpre(),
+                    on_post = LN_synapses.onpost(),
+                    namespace = LN_synapses.namespace(),
+                    method = LN_synapses.method())
+
+    S_LNPN = Synapses(G_LN, G_PN,
+                    model = eqs_syn_LN,
+                    on_pre = LN_synapses.onpre(),
+                    on_post = LN_synapses.on_post(),
+                    namespace = LN_synapses.namespace(),
+                    method = LN_synapses.method())
+
+    S_PNLN = Synapses(G_PN, G_LN,
+                    model = eqs_syn_PN,
+                    on_pre = PN_synapses.onpre(),
+                    on_post = PN_synapses.onpost(),
+                    namespace = PN_synapses.namespace(),
+                    method = PN_synapses.method())
+
+
+
+
+    if train:
+        S_LN.connect(condition='i != j', p = AL_params['PLN'])
+        S_LNPN.connect(condition='i != j', p = AL_params['PLNPN'])
+        S_PNLN.connect(condition='i!=j', p = AL_params['PPNLN'])
+    else:
+        # Not sure???
+        S_AL_conn = AL_params['S_AL_conn']
+        S_AL.connect(i = S_AL_conn['i'], j = S_AL_conn['j'])
+
+    S_LN.set_states(LN_synapses.init_cond())
+    S_LNPN.set_states(LN_synapses.init_cond())
+    S_PNLN.set_states(PN_synapses.init_cond())
+
+    net.add(G_LN, G_PN, S_LN, S_LNPN, S_PNLN, trace_LN, trace_PN, spikes_LN, spikes_PN)
+
+
+    return [G_LN, G_PN, trace_LN, trace_PN, spikes_LN, spikes_PN]
+
 
 
 
@@ -184,7 +274,7 @@ def get_BL(BL_params, net):
                         method=BL_neuron.method(),
                         namespace = BL_neuron.namespace())
 
-    
+
     trace_BL = StateMonitor(G_BL, BL_neuron.state_mon(), record=True)
     spikes_BL = SpikeMonitor(G_BL)
 
@@ -196,7 +286,7 @@ def get_BL(BL_params, net):
              on_post = BL_synapses.onpost(),
              namespace = BL_synapses.namespace(),
              method = BL_synapses.method())
-    
+
     S_BL.connect(condition='i != j')
 
     S_BL.set_states(BL_synapses.init_cond())

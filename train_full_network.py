@@ -4,8 +4,10 @@ import sys
 
 if sys.version_info[0] < 3:
     import cPickle as pickle
+
 else:
     import pickle
+
 
 import neuron_models as nm
 import lab_manager as lm
@@ -20,12 +22,16 @@ from brian2 import *
 plt.style.use('ggplot')
 
 #compile into C++ standalone
-#TODO: not working yet
+#works, but asking it to compile too much will freeze computer -- uses all cores to compile
+# Note: The documentations states this only works for a fixed number of run statements
+# and not loops. This doesn't appear to be the case, although maybe it works with
+# only a few number of loops? I've gotten 4 runs to work.
+# tstart variable also doesn't work because it uses a single value for it.
 comp = False
 
 # C++ standalone code to run quicker
 if comp:
-    set_device('cpp_standalone', build_on_run=False)
+    set_device('cpp_standalone', debug=True, build_on_run=False)
 
 # Parallelize using OpenMP. Might not work....
 # also only works with C++ standalone/comp = True
@@ -41,10 +47,12 @@ MNIST_data_path = 'data_set/'
 prefix = 'total_data/'
 
 #doesn't work if timestep > 0.05ms
-defaultclock.dt = .05*ms
+defaultclock.dt = .02*ms
+
+
 
 #number of images to run
-num_examples = int(raw_input('Number of images to train: ')) #len(training)
+#num_examples = int(raw_input('Number of images to train: ')) #len(training)
 
 #plot some diagnostics at the end
 plot = True
@@ -56,49 +64,60 @@ plot = True
 #0-10
 numbers_to_inc = frozenset([0, 1])
 
-#size of network 
-N_AL = 784 #must be >= 784
-N_KC = 7840
+#size of network
+N_AL = 1000 #must be >= 784
+N_KC = 10000
 N_BL = 2 #should be the same as the number of classes
 
 #learning rate
-eta = 0.1 #fraction of total conductance per spike
+# 0.1
+eta = 0.01 #fraction of total conductance per spike
 
 """
 Amount of inhibition between AL Neurons.
 Enforces WLC dynamics and needs to be scaled
 with the size of the network
 """
-in_AL = 0.17
+#0.1
+in_AL = 0.1
 
 '''Excititation between AL -> KCs'''
+#0.2
 ex_ALKC = .2
 
+
 #excitation kenyon cells to beta lobes
+#1.5
 ex_KCBL = 1.5
 
 #Lateral inhibition beta lobe
+#4
 in_BLBL = 4.0
 
 
 #excitation KC->GGN
+#0.01
 ex_KCGGN = 0.01
 
 #inhibition GGN->KC
+#0.2
 in_GGNKC = 0.2
 
 #probability inter-AL connections
+#0.5
 PAL = 0.5
 
 #AL->KCs
+#0.01
 PALKC = 0.01
 
 #KCs->BLs
+#0.3
 PKCBL = 0.3
 
-input_intensity = 0.15 #scale input
-time_per_image = 80 #ms
-reset_time = 15 #ms
+input_intensity = 0.4 #scale input
+time_per_image = 100 #ms
+reset_time = 20 #ms
 
 bin_thresh = 150 #threshold for binary
 
@@ -109,7 +128,7 @@ taupost = taupre
 tunable_params = {'numbers_to_inc': numbers_to_inc,
                   'N_AL': N_AL,
                   'N_KC': N_KC,
-                  'N_BL': N_BL, 
+                  'N_BL': N_BL,
                   'eta': eta,
                   'in_AL': in_AL,
                   'ex_ALKC': ex_ALKC,
@@ -134,10 +153,10 @@ pickle.dump( tunable_params, open(prefix+"connections/tunable_params.p", "wb" ) 
 #Antennal Lobe parameters
 al_para = dict(N = N_AL,
                g_syn = in_AL,
-               neuron_class = nm.n_FitzHugh_Nagumo, 
+               neuron_class = nm.n_FitzHugh_Nagumo,
                syn_class = nm.s_FitzHughNagumo_inh,
                PAL = PAL,
-               mon = ['V']
+               mon = ['V','I_inj']
               )
 
 #Kenyon cell parameters
@@ -173,8 +192,22 @@ conn_para = dict(synALKC_class = nm.s_lif_ex,
                  PALKC = PALKC,
                  PKCBL = PKCBL)
 
+
+
+tr = 20*ms
+tf = 25*ms
+width = time_per_image*ms
+time_per_image = time_per_image*ms + tr + tf
+tstart = reset_time*ms
+# This takes current value of time rather than variable t...
+I = '2*(0.5*(1-tanh(-3.5*(t-tstart)/tr)) - 0.5)*0.5*(1-tanh(-3.5*(width+tr-(t-tstart))/tf))*input_intensity*nA'
+
+@network_operation()
+def f(t):
+    G_AL.I_inj = I
+
 #create the network object
-net = Network()
+net = Network(f)
 
 G_AL, S_AL, trace_AL, spikes_AL = lm.get_AL(al_para, net)
 
@@ -190,7 +223,7 @@ S_ALKC, S_KCGGN, S_GGNKC, S_KCBL = lm.connect_network(conn_para, states, net)
 
 #----------------------------------------------------------
 
-
+"""
 #load MNIST data
 start = time.time()
 training = ex.get_labeled_data(MNIST_data_path + 'training', MNIST_data_path)
@@ -204,18 +237,81 @@ imgs = training['x']
 labels = training['y']
 
 imgs, labels = rshuffle(imgs, labels)
+"""
+"""
+# Gaussian Clusters
+num_classes = 2
+samples_per_class = 10
+n_samples = int(samples_per_class*num_classes)
+from sklearn.datasets.samples_generator import make_blobs
+
+X,_ = make_blobs(n_samples=n_samples,centers=num_classes, cluster_std=0.6,n_features=N_AL)
+# Adjust dataset
+X = X[:,::-1]
+X = (X - np.min(X))/(np.max(X) - np.min(X))
+"""
+
+# random input
+num_classes = 2
+samples_per_class = 2
+n_samples = int(samples_per_class*num_classes)
+
+p_inj = 0.3
+X = np.zeros((num_classes,N_AL))
+for j in range(num_classes):
+    X[j,:] = ex.get_rand_I(N_AL,p_inj,input_intensity)
+
+# random input with rise time
+# keep random input uncommented
+
+
 
 #run the network
+
+# Run random input with rise time
+for i in range(n_samples):
+    G_AL.active_ = 0
+    net.run(reset_time*ms)
+
+    G_AL.active_ = X[i%num_classes,:]
+
+    tstart = 't'
+    print(tstart)
+
+    net.run(time_per_image, report='text')
+
+"""
+# Run random input
+for i in range(n_samples):
+    G_AL.I_inj = np.zeros(N_AL)*nA
+    net.run(reset_time*ms)
+
+    G_AL.I_inj = X[i%num_classes,:]*input_intensity*nA
+    net.run(time_per_image*ms, report='text')
+"""
+
+"""
+# Gaussian cluster run
+for i in range(n_samples):
+    G_AL.I_inj = np.zeros(N_AL)*nA
+    net.run(reset_time*ms)
+
+    G_AL.I_inj = X[i,:]*input_intensity*nA
+    net.run(time_per_image*ms, report='text')
+"""
+"""
+# MNIST Run
+
 j = 0
 for i in range(num_tot_images):
     if labels[i][0] in numbers_to_inc:
         print('image: ' + str(j))
         j = j+1
-        
+
         #reset network
-        G_AL.I_inj = 0.0*np.ones(N_AL)*nA      
+        G_AL.I_inj = 0.0*np.ones(N_AL)*nA
         net.run(reset_time*ms)
-        
+
         #right now creating binary image
         rates = np.where(imgs[i%60000,:,:] > bin_thresh, 1, 0)*input_intensity
         downsample = rates
@@ -225,16 +321,19 @@ for i in range(num_tot_images):
         padding = N_AL - n_input
         I = np.pad(linear, (0,padding), 'constant', constant_values=(0,0))
         G_AL.I_inj = I*nA
-        
+
         net.run(time_per_image*ms, report = 'text')
     if j == num_examples:
         break
+"""
 
-# run if built in C++ standalone
+# run if built in C++ standalone -- this takes a LONG time
 if comp:
-    device.build(directory=prefix+'run_dir', compile=True, run=True, debug=False)
-
-store(name = 'trained', filename = prefix+'connections/trained')
+    print("Compiling...")
+    device.build(directory=prefix+'run_dir', compile=True, run=True, debug=True)
+# store function not defined for C++ standalone
+else:
+    store(name = 'trained', filename = prefix+'connections/trained')
 
 
 #save some of the data
@@ -311,3 +410,12 @@ if plot:
     plt.suptitle('Trace BL train')
     fig7.savefig(prefix+'images/trace_BL_train.png', bbox_inches = 'tight')
 
+    plt.close('all')
+
+    fig8 = plt.figure()
+    plt.plot(trace_AL.t/ms, mean(trace_AL.I_inj, axis=0)/nA)
+    plt.title('Injected current')
+    plt.xlabel('Time (ms)')
+    plt.ylabel('Avg Current (nA)')
+
+    plt.show()
