@@ -64,7 +64,7 @@ Amount of inhibition between AL Neurons.
 Enforces WLC dynamics and needs to be scaled
 with the size of the network
 """
-in_AL = 0.17
+in_AL = 0.1
 
 '''Excititation between AL -> KCs'''
 ex_ALKC = .2
@@ -97,7 +97,7 @@ reset_time = 15 #ms
 
 bin_thresh = 150 #threshold for binary
 
-taupre = 10*ms #width of STDP
+taupre = 20*ms #width of STDP
 taupost = taupre
 
 #save the parameters to load in for testing
