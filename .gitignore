@@ -1,0 +1,34 @@
+# Ignore files in these folders except the .txt file that allows for pushing to github
+
+# run directory for compiling in C++
+total_data/run_dir/*
+!total/data/run_dir/run_dir.txt
+
+# image folder
+total_data/images/*
+!total_data/images/images.txt
+
+# output folder
+total_data/output/*
+!total_data/output/output.txt
+
+# connections folder
+total_data/connections/*
+!total_data/connections/connections.txt
+
+# ignore input data
+data_set/*
+
+# Ignore cache
+__pycache__/
+
+# scripts folder -- a place to store files we may want to use
+scripts/
+
+# Test scripts
+test.py
+
+
+# Scriptes that are not yet ready to be uploaded!
+examples/AL_FN.py
+examples/bioAL.py
