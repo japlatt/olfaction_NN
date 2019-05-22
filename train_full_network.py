@@ -261,10 +261,6 @@ X = np.zeros((num_classes,N_AL))
 for j in range(num_classes):
     X[j,:] = ex.get_rand_I(N_AL,p_inj,input_intensity)
 
-# random input with rise time
-# keep random input uncommented
-
-
 
 #run the network
 
@@ -275,11 +271,10 @@ for i in range(n_samples):
 
     G_AL.active_ = X[i%num_classes,:]
 
-    tstart = 't'
     print(tstart)
 
     net.run(time_per_image, report='text')
-
+    tstart = tstart + time_per_image + reset_time*ms
 """
 # Run random input
 for i in range(n_samples):
