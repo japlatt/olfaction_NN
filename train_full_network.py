@@ -57,6 +57,9 @@ defaultclock.dt = .02*ms
 #plot some diagnostics at the end
 plot = True
 
+# A way to use a synapse to store LFP, useful when you don't want to
+# trace the voltages of all AL neurons.
+lfp_syn = True
 #-----------------------------------------------------------
 #Tunable Parameters: the parameters to change in the network
 
@@ -156,7 +159,8 @@ al_para = dict(N = N_AL,
                neuron_class = nm.n_FitzHugh_Nagumo,
                syn_class = nm.s_FitzHughNagumo_inh,
                PAL = PAL,
-               mon = ['V','I_inj']
+               mon = [],
+               lfp_syn = lfp_syn
               )
 
 #Kenyon cell parameters
@@ -208,8 +212,8 @@ def f(t):
 
 #create the network object
 net = Network(f)
-
-G_AL, S_AL, trace_AL, spikes_AL = lm.get_AL(al_para, net)
+# monlfp if using synapse to monitor
+G_AL, S_AL, trace_AL, spikes_AL, s_lfp, monlfp = lm.get_AL(al_para, net)
 
 G_KC, trace_KC, spikes_KC = lm.get_KCs(kc_para, net)
 
@@ -220,6 +224,7 @@ G_BL, S_BL, trace_BL, spikes_BL = lm.get_BL(bl_para, net)
 states = [G_AL, G_KC, G_GGN, G_BL]
 
 S_ALKC, S_KCGGN, S_GGNKC, S_KCBL = lm.connect_network(conn_para, states, net)
+
 
 #----------------------------------------------------------
 
@@ -253,7 +258,7 @@ X = (X - np.min(X))/(np.max(X) - np.min(X))
 
 # random input
 num_classes = 2
-samples_per_class = 2
+samples_per_class = 5
 n_samples = int(samples_per_class*num_classes)
 
 p_inj = 0.3
@@ -270,8 +275,6 @@ for i in range(n_samples):
     net.run(reset_time*ms)
 
     G_AL.active_ = X[i%num_classes,:]
-
-    print(tstart)
 
     net.run(time_per_image, report='text')
     tstart = tstart + time_per_image + reset_time*ms
@@ -390,13 +393,6 @@ if plot:
     plt.ylabel('Membrane Voltage (mV)')
     fig5.savefig(prefix+'images/trace_GGN_train.png', bbox_inches = 'tight')
 
-    fig6 = plt.figure()
-    plt.plot(trace_AL.t/ms, mean(trace_AL.V, axis = 0)/mV)
-    plt.title('LFP AL')
-    plt.xlabel('Time (ms)')
-    plt.ylabel('Membrane Voltage (mV)')
-    fig6.savefig(prefix+'images/lfp_AL_train.png', bbox_inches = 'tight')
-
     fig7 = plt.figure()
     plt.subplot(2,1,1)
     plt.plot(trace_BL.t/ms, trace_BL.v[0]/mV)
@@ -405,12 +401,26 @@ if plot:
     plt.suptitle('Trace BL train')
     fig7.savefig(prefix+'images/trace_BL_train.png', bbox_inches = 'tight')
 
-    plt.close('all')
+    #fig8 = plt.figure()
+    #plt.plot(trace_AL.t/ms, mean(trace_AL.I_inj, axis=0)/nA)
+    #plt.title('Injected current')
+    #plt.xlabel('Time (ms)')
+    #plt.ylabel('Avg Current (nA)')
 
-    fig8 = plt.figure()
-    plt.plot(trace_AL.t/ms, mean(trace_AL.I_inj, axis=0)/nA)
-    plt.title('Injected current')
-    plt.xlabel('Time (ms)')
-    plt.ylabel('Avg Current (nA)')
+    if lfp_syn:
+        fig9 = plt.figure()
+        plt.plot(monlfp.t/ms, monlfp.V[0]/mV)
+        plt.title('LFP AL')
+        plt.xlabel('Time (ms)')
+        plt.ylabel('Membrane Voltage (mV)')
+        fig9.savefig(prefix+'images/lfp_AL_train.png', bbox_inches = 'tight')
+
+    else:
+        fig6 = plt.figure()
+        plt.plot(trace_AL.t/ms, mean(trace_AL.V, axis = 0)/mV)
+        plt.title('LFP AL')
+        plt.xlabel('Time (ms)')
+        plt.ylabel('Membrane Voltage (mV)')
+        fig6.savefig(prefix+'images/lfp_AL_train.png', bbox_inches = 'tight')
 
     plt.show()

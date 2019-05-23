@@ -86,6 +86,7 @@ def get_AL(AL_params, net, train = True):
 
     eqns_neuron = AL_neuron.eqs()
 
+    lfp_syn = AL_params.get('lfp_syn',False)
 
     eqns_syn = AL_synapses.eqs()
 
@@ -109,6 +110,13 @@ def get_AL(AL_params, net, train = True):
                  namespace = AL_synapses.namespace(),
                  method = AL_synapses.method())
 
+    if lfp_syn:
+        lfp = NeuronGroup(1, model='''V : volt''')
+        S_LFP = Synapses(G_AL,lfp, model='''V_post = V_pre : volt (summed)''')
+        S_LFP.summed_updaters['V_post'].when = 'after_groups'
+        S_LFP.connect()
+        trace_LFP = StateMonitor(S_LFP,'V',record=0)
+
     if train:
         S_AL.connect(condition='i != j', p = AL_params['PAL'])
     else:
@@ -117,9 +125,13 @@ def get_AL(AL_params, net, train = True):
 
     S_AL.set_states(AL_synapses.init_cond())
 
-    net.add(G_AL, S_AL, trace_AL, spikes_AL)
+    net.add(G_AL, S_AL, trace_AL, spikes_AL, lfp, S_LFP, trace_LFP)
 
-    return [G_AL, S_AL, trace_AL, spikes_AL]
+    if lfp_syn:
+        return [G_AL, S_AL, trace_AL, spikes_AL, S_LFP, trace_LFP]
+
+    else:
+        return [G_AL, S_AL, trace_AL, spikes_AL]
 
 # A function to obtain a more biological antennal lobe with separate excitatory
 # and inhibitory neurons
