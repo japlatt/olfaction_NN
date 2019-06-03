@@ -30,5 +30,11 @@ test.py
 
 
 # Scriptes that are not yet ready to be uploaded!
-examples/AL_FN.py
-examples/bioAL.py
+examples/
+
+# Where I store previous experiment data
+previous_experiments/
+
+# Any random files
+total_data/*npy
+total_data/*txt

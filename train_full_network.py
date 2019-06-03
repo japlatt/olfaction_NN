@@ -1,6 +1,10 @@
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.use('Agg')
 import sys
+import time
+
+import matplotlib.pyplot as plt
 
 if sys.version_info[0] < 3:
     import cPickle as pickle
@@ -47,7 +51,7 @@ MNIST_data_path = 'data_set/'
 prefix = 'total_data/'
 
 #doesn't work if timestep > 0.05ms
-defaultclock.dt = .02*ms
+defaultclock.dt = .05*ms
 
 
 
@@ -74,7 +78,7 @@ N_BL = 2 #should be the same as the number of classes
 
 #learning rate
 # 0.1
-eta = 0.01 #fraction of total conductance per spike
+eta = 0.0001 #fraction of total conductance per spike
 
 """
 Amount of inhibition between AL Neurons.
@@ -203,6 +207,9 @@ tf = 25*ms
 width = time_per_image*ms
 time_per_image = time_per_image*ms + tr + tf
 tstart = reset_time*ms
+
+t_sim = time.time()
+
 # This takes current value of time rather than variable t...
 I = '2*(0.5*(1-tanh(-3.5*(t-tstart)/tr)) - 0.5)*0.5*(1-tanh(-3.5*(width+tr-(t-tstart))/tf))*input_intensity*nA'
 
@@ -213,7 +220,7 @@ def f(t):
 #create the network object
 net = Network(f)
 # monlfp if using synapse to monitor
-G_AL, S_AL, trace_AL, spikes_AL, s_lfp, monlfp = lm.get_AL(al_para, net)
+G_AL, S_AL, trace_AL, spikes_AL, G_LFP, S_LFP, trace_LFP = lm.get_AL(al_para, net)
 
 G_KC, trace_KC, spikes_KC = lm.get_KCs(kc_para, net)
 
@@ -258,7 +265,7 @@ X = (X - np.min(X))/(np.max(X) - np.min(X))
 
 # random input
 num_classes = 2
-samples_per_class = 5
+samples_per_class = 2
 n_samples = int(samples_per_class*num_classes)
 
 p_inj = 0.3
@@ -325,6 +332,8 @@ for i in range(num_tot_images):
         break
 """
 
+print('Simulation time: {0} seconds'.format(time.time()-t_sim))
+
 # run if built in C++ standalone -- this takes a LONG time
 if comp:
     print("Compiling...")
@@ -356,6 +365,7 @@ np.save(prefix+'output/traceGGN_V', trace_GGN.v)
 
 np.save(prefix+'output/weights', S_KCBL.w_syn)
 
+np.save(prefix+'input',X)
 #plot diagnostics
 if plot:
     fig1 = plt.figure()
@@ -409,7 +419,7 @@ if plot:
 
     if lfp_syn:
         fig9 = plt.figure()
-        plt.plot(monlfp.t/ms, monlfp.V[0]/mV)
+        plt.plot(trace_LFP.t/ms, trace_LFP.V[0]/mV)
         plt.title('LFP AL')
         plt.xlabel('Time (ms)')
         plt.ylabel('Membrane Voltage (mV)')
@@ -423,4 +433,4 @@ if plot:
         plt.ylabel('Membrane Voltage (mV)')
         fig6.savefig(prefix+'images/lfp_AL_train.png', bbox_inches = 'tight')
 
-    plt.show()
+    #plt.show()

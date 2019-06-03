@@ -226,7 +226,7 @@ class n_Projection_Neuron:
     #Maximum conductances
     g_Na = 7150.0*nS
     g_K = 1430.0*nS
-    gL= 21.0*nS
+    g_L = 21.0*nS
     g_KL = 5.72*nS
     g_A = 1430.0*nS
 
@@ -255,7 +255,7 @@ class n_Projection_Neuron:
     #Gating Variable n parameters
     van = 35.1*mV
     san = 5.0*mV
-    can = 0.016/ms
+    can = 0.016/(ms*mV)
     vbn = 20.0*mV
     sbn = 40.0*mV
     cbn = 0.25/ms
@@ -300,9 +300,9 @@ class n_Projection_Neuron:
     def eqs(self):
         eqns_PN = '''
                     dV/dt = -1/C_m*(g_L*(V - E_L) + g_Na*m**3*h*(V - E_Na) \
-                            + g_K*n*(V - E_K) + g_A*z**4*u*(V - E_K)  + g_KL*(V - E_K) - I_inj + I_syn): volt
+                            + g_K*n*(V - E_K) + g_A*z**4*u*(V - E_K)  + g_KL*(V - E_K) - I_inj + I_syn_inh): volt
                     I_inj: amp
-                    I_syn: amp
+                    I_syn_inh: amp
 
                     dm/dt = (xm-m)/tm : 1
                     xm = 0.5*(1 - tanh(0.5*(V - vm)/dvm)) : 1
@@ -318,7 +318,7 @@ class n_Projection_Neuron:
 
                     dz/dt = (xz - z)/tz : 1
                     xz = 0.5*(1-tanh(0.5*(V-vz)/dvz)) : 1
-                    tz = 1/(exp((V-tzv1)/tzd1) + exp(-(V-tzv1)/tzd2) + 0.37) : second
+                    tz = 1*ms/(exp((V-tzv1)/tzd1) + exp(-(V-tzv1)/tzd2) + 0.37) : second
 
                     du/dt = (xu - u)/tu : 1
                     xu = 0.5*(1-tanh(0.5*(V - vu)/dvu)) : 1
@@ -333,6 +333,7 @@ class n_Projection_Neuron:
                          g_Na = self.g_Na,
                          g_K = self.g_K,
                          g_KL = self.g_KL,
+                         g_A = self.g_A,
                          E_L = self.E_L,
                          E_Na = self.E_Na,
                          E_K = self.E_K,
@@ -407,7 +408,7 @@ class n_Local_Neuron:
 
     #Maximum conductances
     g_K = 1000.0*nS
-    gL= 21.5*nS
+    g_L = 21.5*nS
     g_KL = 1.43*nS
     g_Ca = 290.0*nS
     g_KCa = 35.8*nS
@@ -477,18 +478,19 @@ class n_Local_Neuron:
 
     def eqs(self):
         eqns_LN = '''
-                    dV/dt = -1/C_m*(g_L*(V - E_L) + g_KCa*q*(V - E_KCa)  \
+                    dV/dt = -1/C_m*(g_L*(V - E_L) + g_KCa*q*(V - E_K)  \
                             + g_K*n**4*(V - E_K) + g_Ca*s**2*v*(V - E_Ca) \
-                            + g_KL*(V - E_K) - I_inj + I_syn): volt
+                            + g_KL*(V - E_K) - I_inj + I_syn_ex + I_syn_inh): volt
                     I_inj: amp
-                    I_syn: amp
+                    I_syn_ex: amp
+                    I_syn_inh: amp
 
-                    dCa/dt = -phi*g_Ca*s**2*v*(V-E_Ca) - (Ca - Cai)/tCa: M
+                    dCa/dt = -phi*g_Ca*s**2*v*(V-E_Ca) - (Ca - Cai)/tCa: mM
 
                     dn/dt = (xn - n)/tn : 1
                     xn = an/(an + bn) : 1
                     tn = 4.65/(an + bn) : second
-                    an = can*((V - van)/(1-exp(-(V-van)/san)) : 1/second
+                    an = can*(V - van)/(1-exp(-(V-van)/san)) : 1/second
                     bn = cbn*exp(-(V - vbn)/sbn) : 1/second
 
                     ds/dt = (xs - s)/ts : 1
@@ -516,7 +518,6 @@ class n_Local_Neuron:
                          E_K = self.E_K,
                          E_KL = self.E_KL,
                          E_Ca = self.E_Ca,
-                         E_KCa = self.E_KCa,
                          van = self.van,
                          san = self.san,
                          can = self.can,
@@ -562,7 +563,7 @@ class n_Local_Neuron:
 
     def init_cond(self):
         return  dict(V = -60*mV,
-                     Ca = 'rand()'*mV,
+                     Ca = 'rand()*uM',
                      n = 'rand()',
                      s = 'rand()',
                      v = 'rand()',
@@ -1008,9 +1009,9 @@ class s_PN_ex:
     def eqs(self):
         syn =   '''
                 gNt: siemens
-                I_syn_post = gNt*r*(V - E_syn): amp (summed)
+                I_syn_ex_post = gNt*r*(V_post - E_syn): amp (summed)
                 dr/dt = (xr - r)/(tau*(r1 - xr)) : 1 (clock-driven)
-                xr = 0.5*(1-tanh(-0.5*(Vpre-Vp)/Kp)) : 1 (clock-driven)
+                xr = 0.5*(1-tanh(-0.5*(V_pre-Vp)/Kp)) : 1
                 '''
         return syn
 
@@ -1068,10 +1069,10 @@ class s_LN_inh:
     def eqs(self):
         syn =   '''
                 gNt: siemens
-                I_syn_post = gNt*r*(V - E_gaba) + g_slow*G**4/(G**4 + K)*(V - E_K) : amp (summed)
+                I_syn_inh_post = gNt*r*(V_post - E_gaba) + g_slow*G**4/(G**4 + K)*(V_post - E_K) : amp (summed)
                 dr/dt = alphaR/(1+exp(-(V_pre - vra)/dvra))*(1-r) - betaR*r : 1 (clock-driven)
-                ds/dt = s1*(1-s)/(1+exp(-(V-vrb)/dvrb)) - s2*s : 1 (clock-driven)
-                dG/dt = s3*s - s4*G : M (clock-driven)
+                dss/dt = s1*(1 - ss)/(1+exp(-(V_pre - vrb)/dvrb)) - s2*ss : 1 (clock-driven)
+                dG/dt = s3*ss - s4*G : mM (clock-driven)
 
                 '''
         return syn
@@ -1107,5 +1108,5 @@ class s_LN_inh:
     def init_cond(self):
         return {'gNt': self.g_syn,
                 'r': 'rand()',
-                's': 'rand()',
-                'G': 'rand()'*uM}
+                'ss': 'rand()',
+                'G': 'rand()*uM'}

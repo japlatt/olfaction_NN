@@ -111,11 +111,11 @@ def get_AL(AL_params, net, train = True):
                  method = AL_synapses.method())
 
     if lfp_syn:
-        lfp = NeuronGroup(1, model='''V : volt''')
-        S_LFP = Synapses(G_AL,lfp, model='''V_post = V_pre : volt (summed)''')
+        G_LFP = NeuronGroup(1, model='''V : volt''')
+        S_LFP = Synapses(G_AL,G_LFP, model='''V_post = V_pre : volt (summed)''')
         S_LFP.summed_updaters['V_post'].when = 'after_groups'
         S_LFP.connect()
-        trace_LFP = StateMonitor(S_LFP,'V',record=0)
+        trace_LFP = StateMonitor(G_LFP,'V',record=True)
 
     if train:
         S_AL.connect(condition='i != j', p = AL_params['PAL'])
@@ -125,17 +125,20 @@ def get_AL(AL_params, net, train = True):
 
     S_AL.set_states(AL_synapses.init_cond())
 
-    net.add(G_AL, S_AL, trace_AL, spikes_AL, lfp, S_LFP, trace_LFP)
+    net.add(G_AL, S_AL, trace_AL, spikes_AL)
 
     if lfp_syn:
-        return [G_AL, S_AL, trace_AL, spikes_AL, S_LFP, trace_LFP]
+        net.add(G_LFP, S_LFP, trace_LFP)
+
+    if lfp_syn:
+        return [G_AL, S_AL, trace_AL, spikes_AL, G_LFP, S_LFP, trace_LFP]
 
     else:
         return [G_AL, S_AL, trace_AL, spikes_AL]
 
 # A function to obtain a more biological antennal lobe with separate excitatory
 # and inhibitory neurons
-def get_bioAL(AL_params, net):
+def get_bioAL(AL_params, net, train = True):
     N_PN = AL_params['N_PN']
     N_LN = AL_params['N_LN']
     g_inh = AL_params['g_syn_inh']
@@ -156,7 +159,7 @@ def get_bioAL(AL_params, net):
 
     G_PN = NeuronGroup(N_PN,
                     model = eqs_PN,
-                    threshould = PN_neuron.threshold(),
+                    threshold = PN_neuron.threshold(),
                     method = PN_neuron.method(),
                     refractory = PN_neuron.refractory(),
                     reset = PN_neuron.reset(),
@@ -164,7 +167,7 @@ def get_bioAL(AL_params, net):
 
     G_LN = NeuronGroup(N_LN,
                     model = eqs_LN,
-                    threshould = LN_neuron.threshold(),
+                    threshold = LN_neuron.threshold(),
                     method = LN_neuron.method(),
                     refractory = LN_neuron.refractory(),
                     reset = LN_neuron.reset(),
@@ -180,7 +183,7 @@ def get_bioAL(AL_params, net):
     G_LN.set_states(LN_neuron.init_cond())
 
     # Connect LNs to LNs
-    S_LN = Synases(G_LN, G_LN,
+    S_LN = Synapses(G_LN, G_LN,
                     model = eqs_syn_LN,
                     on_pre = LN_synapses.onpre(),
                     on_post = LN_synapses.onpost(),
@@ -190,7 +193,7 @@ def get_bioAL(AL_params, net):
     S_LNPN = Synapses(G_LN, G_PN,
                     model = eqs_syn_LN,
                     on_pre = LN_synapses.onpre(),
-                    on_post = LN_synapses.on_post(),
+                    on_post = LN_synapses.onpost(),
                     namespace = LN_synapses.namespace(),
                     method = LN_synapses.method())
 
@@ -200,7 +203,6 @@ def get_bioAL(AL_params, net):
                     on_post = PN_synapses.onpost(),
                     namespace = PN_synapses.namespace(),
                     method = PN_synapses.method())
-
 
 
 

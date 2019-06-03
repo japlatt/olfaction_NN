@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
+sys.path.append('../../')
 if sys.version_info[0] < 3:
     import cPickle as pickle
 else:
@@ -45,10 +46,12 @@ prefix = 'total_data/'
 defaultclock.dt = .05*ms
 
 #number of images to run
-num_examples = int(raw_input('Number of images to test: ')) #len(training)
+#num_examples = int(raw_input('Number of images to test: ')) #len(training)
 
 #plot some diagnostics at the end
 plot = True
+
+lfp_syn = True
 
 #-----------------------------------------------------------
 #tunable params
@@ -72,6 +75,8 @@ Enforces WLC dynamics and needs to be scaled
 with the size of the network
 """
 in_AL = tunable_params['in_AL']
+# didn't save as tunable_param yet
+#lfp_syn = tunable_params['lfp_syn']
 
 '''Excititation between AL -> KCs'''
 ex_ALKC = tunable_params['ex_ALKC']
@@ -107,14 +112,15 @@ S_ALKC_conn = np.load(prefix + 'connections/S_ALKC.npz')
 S_KCBL_conn = np.load(prefix + 'connections/S_KCBL.npz')
 
 #--------------------------------------------------------
-
+# Rebuild same network for testing
 al_para = dict(N = N_AL,
                g_syn = in_AL,
-               neuron_class = nm.n_FitzHugh_Nagumo, 
+               neuron_class = nm.n_FitzHugh_Nagumo,
                syn_class = nm.s_FitzHughNagumo_inh,
                p = PAL,
-               mon = ['V'],
-               S_AL_conn = S_AL_conn
+               mon = [],
+               S_AL_conn = S_AL_conn,
+               lfp_syn = lfp_syn
               )
 
 kc_para = dict( N = N_KC,
@@ -147,10 +153,17 @@ conn_para = dict(synALKC_class = nm.s_lif_ex,
                  PKCBL = PKCBL,
                  S_ALKC_conn = S_ALKC_conn,
                  S_KCBL_conn = S_KCBL_conn)
+# Current used
+I = '2*(0.5*(1-tanh(-3.5*(t-tstart)/tr)) - 0.5)*0.5*(1-tanh(-3.5*(width+tr-(t-tstart))/tf))*input_intensity*nA'
+@network_operation()
+def f(t):
+    G_AL.I_inj = I
 
-net = Network()
+net = Network(f)
 
-G_AL, S_AL, trace_AL, spikes_AL = lm.get_AL(al_para, net, train = False)
+G_AL, S_AL, trace_AL, spikes_AL, G_LFP, S_LFP, trace_LFP = lm.get_AL(al_para, net, train = False)
+
+print(G_LFP)
 
 G_KC, trace_KC, spikes_KC = lm.get_KCs(kc_para, net)
 
@@ -164,19 +177,52 @@ S_ALKC, S_KCGGN, S_GGNKC, S_KCBL = lm.connect_network(conn_para, states, net, tr
 
 #-------------------------------------------------
 start = time.time()
-testing = ex.get_labeled_data(MNIST_data_path + 'testing', MNIST_data_path, bTrain = False)
+testing = np.load(prefix+'input.npy')
+print(np.shape(testing))
+#testing = ex.get_labeled_data(MNIST_data_path + 'testing', MNIST_data_path, bTrain = False)
 end = time.time()
 print('time needed to load test set:', end - start)
 
-n_input = testing['rows']*testing['cols'] #28x28=784
+#n_input = testing['rows']*testing['cols'] #28x28=784
 
-num_tot_images = len(testing['x'])
-imgs = testing['x']
-labels = testing['y']
+#num_tot_images = len(testing['x'])
+#imgs = testing['x']
+#labels = testing['y']
 
 #-----------------------------------------------------
 pred_vec = []
 
+num_classes = np.shape(testing)[0]
+samples_per_class = 2
+tr = 20*ms
+tf=25*ms
+time_per_image = 100
+width = time_per_image*ms
+time_per_image = width + tr + tf
+tstart = 0*ms
+num_examples = int(num_classes*samples_per_class)
+# Random Input
+
+for i in range(num_examples):
+    net.restore(name = 'trained', filename = prefix + 'connections/trained')
+    #G_AL.active_ = 0
+    #net.run(reset_time*ms)
+
+    G_AL.active_ = testing[i%num_classes,:]
+    net.run(time_per_image,report='text')
+    # net.restore prevents need for reset?
+    tstart = tstart + time_per_image
+
+    max_act = 0
+    pred = -1
+    trains = spikes_BL.spike_trains()
+    for k in range(len(trains)):
+        if len(trains[k]) > max_act:
+            pred = k
+            max_act = len(trains[k])
+    pred_vec.append((i%num_classes, pred))
+"""
+# MNIST
 j = 0
 for i in range(num_tot_images):
     if labels[i][0] in numbers_to_inc:
@@ -184,8 +230,8 @@ for i in range(num_tot_images):
         print('image: ' + str(j))
         j = j+1
         # print(labels[i][0])
-        
-        
+
+
         #right now creating binary image
         rates = np.where(imgs[i%10000,:,:] > bin_thresh, 1, 0)*input_intensity
         linear = np.ravel(rates)
@@ -207,7 +253,7 @@ for i in range(num_tot_images):
         pred_vec.append((labels[i][0], pred))
     if j == num_examples:
         break
-
+"""
 # run if built in C++ standalone
 if comp:
     device.build(directory=prefix+'run_dir', compile=True, run=True, debug=False)
