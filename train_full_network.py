@@ -8,7 +8,7 @@ import experiments as ex
 from sklearn.utils import shuffle as rshuffle
 
 import time
-import skimage
+# import skimage
 
 from brian2 import *
 
@@ -229,7 +229,7 @@ for i in range(num_tot_images):
 if comp:
     device.build(directory=prefix+'run_dir', compile=True, run=True, debug=False)
 
-store(name = 'trained', filename = prefix+'connections/trained')
+net.store(name = 'trained', filename = prefix+'connections/trained')
 
 
 #save some of the data

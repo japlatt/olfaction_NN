@@ -1,13 +1,13 @@
-import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA
 from sklearn.metrics import mutual_info_score
+import numpy as np
 
 from itertools import cycle
 
 import matplotlib.pyplot as plt
 
-plt.style.use('ggplot')
+# plt.style.use('ggplot')
 
 def load_wlc_data(prefix, num_runs = 3):
     spikes_t_arr = []
@@ -121,12 +121,12 @@ def plotInCA(InCAData, N, start = 400):
     inca1, inca2, inca3 = InCAData
 
 
-    cycol = cycle(['#f10c45','#069af3','#02590f','#ab33ff','#ff8c00','#ffd700'])
+    # cycol = cycle(['#f10c45','#069af3','#02590f','#ab33ff','#ff8c00','#ffd700'])
     # marker = cycle(['^','o','s','p'])
 
     fig = plt.figure(figsize = (10,7))
     ax = fig.gca(projection='3d')
-    c = next(cycol)
+    # c = next(cycol)
     # m = next(marker)
 
     # Turn off tick labels
@@ -138,8 +138,12 @@ def plotInCA(InCAData, N, start = 400):
 
     name = [inca1, inca2, inca3]
     for j in range(3):
-        ax.scatter(name[j][start:,0], name[j][start:,1], name[j][start:,2],s=10, color = c)
-        c = next(cycol)
+        ax.scatter(name[j][start:,0], name[j][start:,1], name[j][start:,2],
+                   s=10)#, 
+                   # color = c,
+                   # marker = m)
+        # c = next(cycol)
+        # m = next(marker)
 
     plt.title('InCA ' + str(N) + ' HH neuron', fontsize = 22)
     ax.view_init(0, 0)

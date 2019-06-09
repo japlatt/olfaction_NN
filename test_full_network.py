@@ -175,9 +175,11 @@ j = 0
 for i in range(num_tot_images):
     if labels[i][0] in numbers_to_inc:
         net.restore(name = 'trained', filename = prefix + 'connections/trained')
+        spikes_BL_test = SpikeMonitor(G_BL)
+        net.add(spikes_BL_test)
         print('image: ' + str(j))
         j = j+1
-        # print(labels[i][0])
+        print(labels[i][0])
         
         
         #right now creating binary image
@@ -192,12 +194,12 @@ for i in range(num_tot_images):
 
         max_act = 0
         pred = -1
-        trains = spikes_BL.spike_trains()
+        trains = spikes_BL_test.spike_trains()
         for k in xrange(len(trains)):
             if len(trains[k]) > max_act:
                 pred = k
                 max_act = len(trains[k])
-
+        net.remove(spikes_BL_test)
         pred_vec.append((labels[i][0], pred))
     if j == num_examples:
         break
