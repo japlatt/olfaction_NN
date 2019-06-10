@@ -19,7 +19,7 @@ import experiments as ex
 from sklearn.utils import shuffle as rshuffle
 
 import time
-#import skimage
+# import skimage
 
 from brian2 import *
 
@@ -128,7 +128,7 @@ reset_time = 30 #ms
 
 bin_thresh = 150 #threshold for binary
 
-taupre = 10*ms #width of STDP
+taupre = 20*ms #width of STDP
 taupost = taupre
 
 #save the parameters to load in for testing
