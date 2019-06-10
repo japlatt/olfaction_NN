@@ -78,7 +78,7 @@ N_BL = 2 #should be the same as the number of classes
 
 #learning rate
 # 0.1
-eta = 0.0001 #fraction of total conductance per spike
+eta = 0.001 #fraction of total conductance per spike
 
 """
 Amount of inhibition between AL Neurons.
@@ -90,12 +90,12 @@ in_AL = 0.1
 
 '''Excititation between AL -> KCs'''
 #0.2
-ex_ALKC = .2
+ex_ALKC = .25
 
 
 #excitation kenyon cells to beta lobes
 #1.5
-ex_KCBL = 1.5
+ex_KCBL = 1.0
 
 #Lateral inhibition beta lobe
 #4
@@ -104,11 +104,11 @@ in_BLBL = 4.0
 
 #excitation KC->GGN
 #0.01
-ex_KCGGN = 0.01
+ex_KCGGN = 0.001
 
 #inhibition GGN->KC
 #0.2
-in_GGNKC = 0.2
+in_GGNKC = 0.3
 
 #probability inter-AL connections
 #0.5
@@ -116,15 +116,15 @@ PAL = 0.5
 
 #AL->KCs
 #0.01
-PALKC = 0.01
+PALKC = 0.02
 
 #KCs->BLs
 #0.3
 PKCBL = 0.3
 
-input_intensity = 0.4 #scale input
+input_intensity = 0.3 #scale input
 time_per_image = 100 #ms
-reset_time = 20 #ms
+reset_time = 30 #ms
 
 bin_thresh = 150 #threshold for binary
 
@@ -203,7 +203,7 @@ conn_para = dict(synALKC_class = nm.s_lif_ex,
 
 
 tr = 20*ms
-tf = 25*ms
+tf = 20*ms
 width = time_per_image*ms
 time_per_image = time_per_image*ms + tr + tf
 tstart = reset_time*ms
@@ -282,7 +282,6 @@ for i in range(n_samples):
     net.run(reset_time*ms)
 
     G_AL.active_ = X[i%num_classes,:]
-
     net.run(time_per_image, report='text')
     tstart = tstart + time_per_image + reset_time*ms
 """

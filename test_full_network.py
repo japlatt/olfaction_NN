@@ -163,13 +163,12 @@ net = Network(f)
 
 G_AL, S_AL, trace_AL, spikes_AL, G_LFP, S_LFP, trace_LFP = lm.get_AL(al_para, net, train = False)
 
-print(G_LFP)
-
 G_KC, trace_KC, spikes_KC = lm.get_KCs(kc_para, net)
 
 G_GGN, trace_GGN = lm.get_GGN(ggn_para, net)
 
 G_BL, S_BL, trace_BL, spikes_BL = lm.get_BL(bl_para, net)
+
 
 states = [G_AL, G_KC, G_GGN, G_BL]
 
@@ -178,7 +177,7 @@ S_ALKC, S_KCGGN, S_GGNKC, S_KCBL = lm.connect_network(conn_para, states, net, tr
 #-------------------------------------------------
 start = time.time()
 testing = np.load(prefix+'input.npy')
-print(np.shape(testing))
+
 #testing = ex.get_labeled_data(MNIST_data_path + 'testing', MNIST_data_path, bTrain = False)
 end = time.time()
 print('time needed to load test set:', end - start)
@@ -193,33 +192,43 @@ print('time needed to load test set:', end - start)
 pred_vec = []
 
 num_classes = np.shape(testing)[0]
-samples_per_class = 2
-tr = 20*ms
-tf=25*ms
-time_per_image = 100
+samples_per_class = 1
+tr = 10*ms
+tf = 10*ms
+time_per_image = 50
 width = time_per_image*ms
 time_per_image = width + tr + tf
 tstart = 0*ms
 num_examples = int(num_classes*samples_per_class)
-# Random Input
 
+#net.restore(name = 'trained', filename = prefix + 'connections/trained')
+#spikes_ABL = SpikeMonitor(G_BL)
+#net.add(spikes_ABL)
+#net.store(name = 'Add monitors')
+
+# Random Input
 for i in range(num_examples):
-    net.restore(name = 'trained', filename = prefix + 'connections/trained')
+    net.restore(name = 'trained', filename=prefix+'connections/trained')
+    spikes_BL_test = SpikeMonitor(G_BL)
+    net.add(spikes_BL_test)
     #G_AL.active_ = 0
     #net.run(reset_time*ms)
-
+    print('After net.restore: {}'.format(spikes_BL_test.count[1]))
     G_AL.active_ = testing[i%num_classes,:]
     net.run(time_per_image,report='text')
+
+    print('After running: {}'.format(spikes_BL_test.count[1]))
     # net.restore prevents need for reset?
     tstart = tstart + time_per_image
 
     max_act = 0
     pred = -1
-    trains = spikes_BL.spike_trains()
+    trains = spikes_BL_test.spike_trains()
     for k in range(len(trains)):
         if len(trains[k]) > max_act:
             pred = k
             max_act = len(trains[k])
+    net.remove(spikes_BL_test)
     pred_vec.append((i%num_classes, pred))
 """
 # MNIST
@@ -265,4 +274,22 @@ for (label, pred) in pred_vec:
         acc+=1
 acc = acc*1.0/num_examples
 print(acc)
+
+"""
+plt.plot(spikes_AAL.t/ms, spikes_AAL.i, '.')
+plt.title('Spikes AL')
+plt.xlabel('TIme (ms)')
+plt.ylabel('Neuron Number')
+plt.ylim(-0.5,N_AL-0.5)
+"""
+
+
+#plt.plot(spikes_BL.t/ms, spikes_ABL.i, '.')
+#plt.plot(spikes_BL.t/ms, spikes_BL.i, '.')
+#plt.title('Spikes BL')
+#plt.xlabel('Time (ms)')
+#plt.ylabel('Neuron Number')
+#lt.ylim(-0.5, N_BL-0.5)
+#plt.show()
+
 np.savetxt(prefix+'predictions.txt', pred_vec)
