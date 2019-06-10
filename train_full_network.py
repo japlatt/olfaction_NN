@@ -265,7 +265,7 @@ X = (X - np.min(X))/(np.max(X) - np.min(X))
 
 # random input
 num_classes = 2
-samples_per_class = 2
+samples_per_class = 1
 n_samples = int(samples_per_class*num_classes)
 
 p_inj = 0.3
@@ -339,7 +339,7 @@ if comp:
     device.build(directory=prefix+'run_dir', compile=True, run=True, debug=True)
 # store function not defined for C++ standalone
 else:
-    store(name = 'trained', filename = prefix+'connections/trained')
+    net.store(name = 'trained', filename = prefix+'connections/trained')
 
 
 #save some of the data
