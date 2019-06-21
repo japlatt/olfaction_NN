@@ -93,6 +93,8 @@ def get_labeled_data(picklename, MNIST_data_path, bTrain = True):
 '''
 Takes name of file containing input stimulus and converts it to timedarray to
 be used as input. Needs filename, dt with units, and the unit of the stimulus.
+
+NOT TESTED
 '''
 def recorded_input(filename,dt,unit):
     if filename[-3:] is 'npy':
