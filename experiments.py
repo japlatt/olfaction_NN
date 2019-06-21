@@ -1,7 +1,12 @@
 import numpy as np
 import os.path
 from struct import unpack
-import cPickle as pickle
+import sys
+if sys.version_info[0] < 3:
+    import cPickle as pickle
+else:
+    import pickle
+
 
 '''
 Random constant current input
@@ -15,9 +20,33 @@ def get_rand_I(N, p, I_inp):
     I[np.nonzero(I)] = I_inp
     return I
 
+'''
+A time dependent function - will need to use a network_operation in training and test script
+@network_operation(dt)
+def f(t):
+    stuff you want it to do
+tr
+    rise time, include time units (i.e. 1*ms)
+    must be defined in run script
+tf
+    fall time, include time units
+    must be defined in run script
+width
+    how long the current should be at max input
+    must be defined in run script
+max_inp
+    max input, include units
+    must be defined in runscript
+    can just provide units if intensity of current is set by the active variable
+'''
+def get_gradual_current():
+    I = '2*(0.5*(1-tanh(-3.5*(t-tstart)/tr)) - 0.5)*0.5*(1-tanh(-3.5*(width+tr-(t-tstart))/tf))*max_inp'
+    return I
+
+
 
 '''
-MNIST helper function to load and unpack MNIST data.  To run you need to download 
+MNIST helper function to load and unpack MNIST data.  To run you need to download
 the MNIST dataset from http://yann.lecun.com/exdb/mnist/.
 
 picklename: name of file to write/read data from
@@ -61,3 +90,16 @@ def get_labeled_data(picklename, MNIST_data_path, bTrain = True):
         data = {'x': x, 'y': y, 'rows': rows, 'cols': cols}
         pickle.dump(data, open("%s.pickle" % picklename, "wb"), -1)
     return data
+'''
+Takes name of file containing input stimulus and converts it to timedarray to
+be used as input. Needs filename, dt with units, and the unit of the stimulus.
+
+NOT TESTED
+'''
+def recorded_input(filename,dt,unit):
+    if filename[-3:] is 'npy':
+        stim = np.load(filename)
+    else:
+        stim = np.loadtxt(filename)
+    stim = TimedArray(stim*unit,dt=dt)
+    return stim
