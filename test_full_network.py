@@ -1,13 +1,14 @@
 from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
 
-sys.path.append('../../')
+import sys
 if sys.version_info[0] < 3:
     import cPickle as pickle
 else:
     import pickle
+    from six.moves import input as raw_input
+    from six.moves import range as xrange
 
 import neuron_models as nm
 import lab_manager as lm
@@ -46,12 +47,10 @@ prefix = 'total_data/'
 defaultclock.dt = .05*ms
 
 #number of images to run
-#num_examples = int(raw_input('Number of images to test: ')) #len(training)
+num_examples = int(raw_input('Number of images to test: ')) #len(training)
 
 #plot some diagnostics at the end
 plot = True
-
-lfp_syn = True
 
 #-----------------------------------------------------------
 #tunable params
@@ -75,8 +74,6 @@ Enforces WLC dynamics and needs to be scaled
 with the size of the network
 """
 in_AL = tunable_params['in_AL']
-# didn't save as tunable_param yet
-#lfp_syn = tunable_params['lfp_syn']
 
 '''Excititation between AL -> KCs'''
 ex_ALKC = tunable_params['ex_ALKC']
@@ -112,15 +109,14 @@ S_ALKC_conn = np.load(prefix + 'connections/S_ALKC.npz')
 S_KCBL_conn = np.load(prefix + 'connections/S_KCBL.npz')
 
 #--------------------------------------------------------
-# Rebuild same network for testing
+
 al_para = dict(N = N_AL,
                g_syn = in_AL,
                neuron_class = nm.n_FitzHugh_Nagumo,
                syn_class = nm.s_FitzHughNagumo_inh,
                p = PAL,
-               mon = [],
-               S_AL_conn = S_AL_conn,
-               lfp_syn = lfp_syn
+               mon = ['V'],
+               S_AL_conn = S_AL_conn
               )
 
 kc_para = dict( N = N_KC,
@@ -153,15 +149,10 @@ conn_para = dict(synALKC_class = nm.s_lif_ex,
                  PKCBL = PKCBL,
                  S_ALKC_conn = S_ALKC_conn,
                  S_KCBL_conn = S_KCBL_conn)
-# Current used
-I = '2*(0.5*(1-tanh(-3.5*(t-tstart)/tr)) - 0.5)*0.5*(1-tanh(-3.5*(width+tr-(t-tstart))/tf))*input_intensity*nA'
-@network_operation()
-def f(t):
-    G_AL.I_inj = I
 
-net = Network(f)
+net = Network()
 
-G_AL, S_AL, trace_AL, spikes_AL, G_LFP, S_LFP, trace_LFP = lm.get_AL(al_para, net, train = False)
+G_AL, S_AL, trace_AL, spikes_AL = lm.get_AL(al_para, net, train = False)
 
 G_KC, trace_KC, spikes_KC = lm.get_KCs(kc_para, net)
 
@@ -169,69 +160,25 @@ G_GGN, trace_GGN = lm.get_GGN(ggn_para, net)
 
 G_BL, S_BL, trace_BL, spikes_BL = lm.get_BL(bl_para, net)
 
-
 states = [G_AL, G_KC, G_GGN, G_BL]
 
 S_ALKC, S_KCGGN, S_GGNKC, S_KCBL = lm.connect_network(conn_para, states, net, train = False)
 
 #-------------------------------------------------
 start = time.time()
-testing = np.load(prefix+'input.npy')
-
-#testing = ex.get_labeled_data(MNIST_data_path + 'testing', MNIST_data_path, bTrain = False)
+testing = ex.get_labeled_data(MNIST_data_path + 'testing', MNIST_data_path, bTrain = False)
 end = time.time()
 print('time needed to load test set:', end - start)
 
-#n_input = testing['rows']*testing['cols'] #28x28=784
+n_input = testing['rows']*testing['cols'] #28x28=784
 
-#num_tot_images = len(testing['x'])
-#imgs = testing['x']
-#labels = testing['y']
+num_tot_images = len(testing['x'])
+imgs = testing['x']
+labels = testing['y']
 
 #-----------------------------------------------------
 pred_vec = []
 
-num_classes = np.shape(testing)[0]
-samples_per_class = 1
-tr = 10*ms
-tf = 10*ms
-time_per_image = 50
-width = time_per_image*ms
-time_per_image = width + tr + tf
-tstart = 0*ms
-num_examples = int(num_classes*samples_per_class)
-
-#net.restore(name = 'trained', filename = prefix + 'connections/trained')
-#spikes_ABL = SpikeMonitor(G_BL)
-#net.add(spikes_ABL)
-#net.store(name = 'Add monitors')
-
-# Random Input
-for i in range(num_examples):
-    net.restore(name = 'trained', filename=prefix+'connections/trained')
-    spikes_BL_test = SpikeMonitor(G_BL)
-    net.add(spikes_BL_test)
-    #G_AL.active_ = 0
-    #net.run(reset_time*ms)
-    print('After net.restore: {}'.format(spikes_BL_test.count[1]))
-    G_AL.active_ = testing[i%num_classes,:]
-    net.run(time_per_image,report='text')
-
-    print('After running: {}'.format(spikes_BL_test.count[1]))
-    # net.restore prevents need for reset?
-    tstart = tstart + time_per_image
-
-    max_act = 0
-    pred = -1
-    trains = spikes_BL_test.spike_trains()
-    for k in range(len(trains)):
-        if len(trains[k]) > max_act:
-            pred = k
-            max_act = len(trains[k])
-    net.remove(spikes_BL_test)
-    pred_vec.append((i%num_classes, pred))
-"""
-# MNIST
 j = 0
 for i in range(num_tot_images):
     if labels[i][0] in numbers_to_inc:
@@ -240,7 +187,7 @@ for i in range(num_tot_images):
         net.add(spikes_BL_test)
         print('image: ' + str(j))
         j = j+1
-        # print(labels[i][0])
+        print('label: ' + str(labels[i][0]))
 
 
         #right now creating binary image
@@ -264,9 +211,10 @@ for i in range(num_tot_images):
         pred_vec.append((labels[i][0], pred))
     if j == num_examples:
         break
-"""
+
 # run if built in C++ standalone
 if comp:
+    print("Compiling...")
     device.build(directory=prefix+'run_dir', compile=True, run=True, debug=False)
 
 print(pred_vec)
@@ -276,22 +224,4 @@ for (label, pred) in pred_vec:
         acc+=1
 acc = acc*1.0/num_examples
 print(acc)
-
-"""
-plt.plot(spikes_AAL.t/ms, spikes_AAL.i, '.')
-plt.title('Spikes AL')
-plt.xlabel('TIme (ms)')
-plt.ylabel('Neuron Number')
-plt.ylim(-0.5,N_AL-0.5)
-"""
-
-
-#plt.plot(spikes_BL.t/ms, spikes_ABL.i, '.')
-#plt.plot(spikes_BL.t/ms, spikes_BL.i, '.')
-#plt.title('Spikes BL')
-#plt.xlabel('Time (ms)')
-#plt.ylabel('Neuron Number')
-#lt.ylim(-0.5, N_BL-0.5)
-#plt.show()
-
 np.savetxt(prefix+'predictions.txt', pred_vec)
