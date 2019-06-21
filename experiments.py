@@ -7,6 +7,7 @@ if sys.version_info[0] < 3:
 else:
     import pickle
 
+
 '''
 Random constant current input
 N: size of array
@@ -17,6 +18,29 @@ def get_rand_I(N, p, I_inp):
     I = np.random.random(N)
     I[I > p] = 0
     I[np.nonzero(I)] = I_inp
+    return I
+
+'''
+A time dependent function - will need to use a network_operation in training and test script
+@network_operation(dt)
+def f(t):
+    stuff you want it to do
+tr
+    rise time, include time units (i.e. 1*ms)
+    must be defined in run script
+tf
+    fall time, include time units
+    must be defined in run script
+width
+    how long the current should be at max input
+    must be defined in run script
+max_inp
+    max input, include units
+    must be defined in runscript
+    can just provide units if intensity of current is set by the active variable
+'''
+def get_gradual_current():
+    I = '2*(0.5*(1-tanh(-3.5*(t-tstart)/tr)) - 0.5)*0.5*(1-tanh(-3.5*(width+tr-(t-tstart))/tf))*max_inp'
     return I
 
 

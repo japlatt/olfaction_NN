@@ -59,6 +59,9 @@ class n_FitzHugh_Nagumo:
         return
 
     def eqs(self):
+        # active is a variable that can be used to assign which neurons are active. For time dependent stimuli,
+        # you can assign I_inj as the function ranging from [-1,1], use a network operator to update, and
+        # use active to assign max amplitude and active neurons.
         eqns_AL = '''
                     I_inj : amp
                     I_syn : 1
@@ -110,12 +113,6 @@ class n_lif:
     vt = -50*mV #threshold for spike
     vr = -74*mV #resting/reset potential
 
-    Ee = 0*mV
-    Ei = -100*mV
-
-    taue = 5*ms #1 ms diehl/cook
-    taui = 2*ms
-
     refKC = 2*ms
 
 
@@ -126,11 +123,10 @@ class n_lif:
 
     def eqs(self):
         eqns_KCs = '''
-                dv/dt = ((vr - v) + (I_synE-I_synI) / nS) / taum  : volt (unless refractory)
-                I_synE = ge * nS * (Ee - v)                        : amp
-                dge/dt = -ge/taue                                  : 1
-                dgi/dt = -gi/taui                                 : 1
-                I_synI                                            : amp
+                dv/dt = ((vr - v) + (I_synE-I_synI + I_inj) / nS) / taum  : volt (unless refractory)
+                I_synE                       : amp
+                I_synI                       : amp
+                I_inj                        : amp
                 '''
         return eqns_KCs
 
@@ -138,10 +134,6 @@ class n_lif:
         ns = dict(  taum = self.taum,
                     vt = self.vt,
                     vr = self.vr,
-                    Ee = self.Ee,
-                    Ei = self.Ei,
-                    taue = self.taue,
-                    taui = self.taui,
                     refrac = self.refKC)
         return ns
 
@@ -186,16 +178,13 @@ class n_li:
     def eqs(self):
         eqns_GGN = '''
                     dv/dt = ((vr - v) + I_synE/nS) / taum  : volt
-                    I_synE = ge * nS * (Ee - v) : amp
-                    dge/dt = -ge/taue : 1
+                    I_synE : amp
                     '''
         return eqns_GGN
 
     def namespace(self):
         ns = dict(  taum = self.taum,
                     vr = self.vr,
-                    Ee = self.Ee,
-                    taue = self.taue,
                     refrac = self.refGGN)
         return ns
 
@@ -301,8 +290,9 @@ class n_Projection_Neuron:
     def eqs(self):
         eqns_PN = '''
                     dV/dt = -1/C_m*(g_L*(V - E_L) + g_Na*m**3*h*(V - E_Na) \
-                            + g_K*n*(V - E_K) + g_A*z**4*u*(V - E_K)  + g_KL*(V - E_K) - I_inj + I_syn_inh): volt
+                            + g_K*n*(V - E_K) + g_A*z**4*u*(V - E_K)  + g_KL*(V - E_K) - I_inj*active + I_syn_inh): volt
                     I_inj: amp
+                    active: 1
                     I_syn_inh: amp
 
                     dm/dt = (xm-m)/tm : 1
@@ -481,8 +471,9 @@ class n_Local_Neuron:
         eqns_LN = '''
                     dV/dt = -1/C_m*(g_L*(V - E_L) + g_KCa*q*(V - E_K)  \
                             + g_K*n**4*(V - E_K) + g_Ca*s**2*v*(V - E_Ca) \
-                            + g_KL*(V - E_K) - I_inj + I_syn_ex + I_syn_inh): volt
+                            + g_KL*(V - E_K) - I_inj*active + I_syn_ex + I_syn_inh): volt
                     I_inj: amp
+                    active: 1
                     I_syn_ex: amp
                     I_syn_inh: amp
 
@@ -619,8 +610,9 @@ class n_HH:
     def eqs(self):
         eqns_AL = '''
                     dV/dt = -1/C_m*(g_L*(V - E_L) + g_Na*m**3*h*(V - E_Na) \
-                            + g_K*n**4*(V - E_K) - I_inj + I_syn): volt
+                            + g_K*n**4*(V - E_K) - I_inj*active + I_syn): volt
                     I_inj: amp/meter**2
+                    active: 1
                     I_syn: amp/meter**2
                     dm/dt = (xm-m)/tm : 1
                     xm = 0.5*(1+tanh((V - vm)/dvm)) : 1
@@ -749,24 +741,32 @@ class s_FitzHughNagumo_inh:
 
 
 class s_lif_ex:
-
+    taue = 5*ms
+    Ee = 0*mV
     delay = 0*ms
 
     def __init__(self, conduct):
+        # What is this even?
         self.g_syn = conduct
         return
 
     def eqs(self):
-        return '''w_syn : 1'''
+        eqns_slif = '''dge_syn/dt = -ge_syn/taue : 1 (clock-driven)
+                    w_syn : 1
+                    I_synE_post = ge_syn * nS * (Ee - v_post) : amp (summed)'''
+
+        return eqns_slif
 
     def onpre(self):
-        return '''ge += w_syn'''
+        return '''ge_syn += w_syn'''
 
     def onpost(self):
         return None
 
     def namespace(self):
-        return None
+        ns = dict( taue = self.taue,
+                    Ee = self.Ee)
+        return ns
 
     def method(self):
         return 'rk4'
@@ -780,22 +780,29 @@ class s_lif_ex:
 class s_lif_in:
 
     delay = 0*ms
+    taui = 2*ms
+    Ei = -100*mV
 
     def __init__(self, conduct):
         self.g_syn = conduct
         return
 
     def eqs(self):
-        return '''w_syn : 1'''
+        return '''
+                dgi_syn/dt = -gi_syn/taui : 1 (clock-driven)
+                w_syn : 1
+                I_synI_post = gi_syn * nS * (Ei - v) : amp (summed)'''
 
     def onpre(self):
-        return '''gi += w_syn'''
+        return '''gi_syn += w_syn'''
 
     def onpost(self):
         return None
 
     def namespace(self):
-        return None
+        ns = dict (taui = self.taui,
+                    Ei = self.Ei)
+        return ns
 
     def method(self):
         return 'rk4'
@@ -843,6 +850,8 @@ class s_gapjunc_in:
 class s_lifSTDP_ex:
 
     delay = 0*ms
+    taue = 5*ms
+    Ee = 0*mV
 
     '''
     conduct: max conductance
@@ -860,12 +869,14 @@ class s_lifSTDP_ex:
     def eqs(self):
         S = '''w_syn : 1
             dApre/dt = -Apre / taupre : 1 (event-driven)
-            dApost/dt = -Apost / taupost : 1 (event-driven)'''
+            dApost/dt = -Apost / taupost : 1 (event-driven)
+            dge_syn/dt = -ge_syn/taue : 1 (clock-driven)
+            I_synE_post = ge_syn * nS * (Ee - v) : amp (summed)'''
 
         return S
 
     def onpre(self):
-        on_pre='''ge += w_syn
+        on_pre='''ge_syn += w_syn
                 Apre += dApre
                 w_syn = clip(w_syn + Apost, 0, g_syn)'''
         return on_pre
@@ -881,7 +892,9 @@ class s_lifSTDP_ex:
                     dApre = self.dApre,
                     dApost = self.dApost,
                     taupre = self.taupre,
-                    taupost = self.taupost)
+                    taupost = self.taupost,
+                    taue = self.taue,
+                    Ee = self.Ee)
 
     def method(self):
         return 'rk4'
