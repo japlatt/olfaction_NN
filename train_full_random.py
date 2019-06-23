@@ -78,7 +78,7 @@ N_BL = 2 #should be the same as the number of classes
 
 #learning rate
 # 0.1
-eta = 0.001 #fraction of total conductance per spike
+eta = 0.1 #fraction of total conductance per spike
 
 """
 Amount of inhibition between AL Neurons.
@@ -99,7 +99,7 @@ ex_KCBL = 1.0
 
 #Lateral inhibition beta lobe
 #4
-in_BLBL = 4.0
+in_BLBL = 0.5
 
 
 #excitation KC->GGN
@@ -228,7 +228,6 @@ G_BL, S_BL, trace_BL, spikes_BL = lm.get_BL(bl_para, net)
 states = [G_AL, G_KC, G_GGN, G_BL]
 
 S_ALKC, S_KCGGN, S_GGNKC, S_KCBL = lm.connect_network(conn_para, states, net)
-
 
 #----------------------------------------------------------
 '''
