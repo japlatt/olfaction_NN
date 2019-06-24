@@ -255,14 +255,14 @@ I = ex.get_gradual_current()
 
 
 # dt here can be smaller than default clock. This is dt of the data provided.
-G_run = G_AL.run_regularly('I_inj = {}'.format(I),dt = 0.02*ms)
+G_run = G_AL.run_regularly('I_inj = {}'.format(I),dt = 0.05*ms)
 net.add(G_run)
 
 # troubleshooting function
-#@network_operation(dt=5*ms)
-#def f2(t):
-#    print(G_AL.I_inj[0])
-#net.add(f2)
+@network_operation(dt=5*ms)
+def f2(t):
+    print(G_AL.I_inj[0])
+net.add(f2)
 
 
 
