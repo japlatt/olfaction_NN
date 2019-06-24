@@ -1,3 +1,8 @@
+"""
+This file goes through an example for how to use a predesigned current as an input.
+Here we make use of the TimedArray, and run_regularly functionality of Brian.
+"""
+
 import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
@@ -54,16 +59,14 @@ defaultclock.dt = .05*ms
 # total run time, too lazy to change name
 time_per_image = 100 # ms
 
-# Setting Up Injected Current - include units
+'''
+Loading the data file and setting up TimedArray
+'''
 data = np.loadtxt(data_path + data_file)
 I = TimedArray(data[:int(time_per_image/0.02)]*5.0*pA, dt = 0.02*ms )
 
 reset_time = 30 #ms
 
-
-
-#number of images to run
-#num_examples = int(raw_input('Number of images to train: ')) #len(training)
 
 #plot some diagnostics at the end
 plot = True
@@ -118,27 +121,25 @@ net = Network()
 # monlfp if using synapse to monitor
 G_AL, S_AL, trace_AL, spikes_AL, G_LFP, S_LFP, trace_LFP = lm.get_AL(al_para, net)
 
-
 states = [G_AL]
+
 
 #----------------------------------------------------------
 '''
 There are a few components to using a time dependent current.
 
-(1) The string I. This is just a string which describes the function and units
-of the time dependent current.
+(1) The data file must be loaded, and the TimedArray function used -- include
+units. dt for the file must be specified. The file must be long enough for the
+run time! If the run time exceeds the time of the file, it will use the last
+current value.
 
 (2) The run_regularly function. This exists in the namespace of the NeuronGroup
 you're adding it to. It can execute code strings at regular intervals. This
 object needs to be assigned a name and added to the network separately if the
 neuron group has previous been added.
 
-(3) Additional parameters: If there are any additional parameters in the string
-(rise time, fall time, etc), they need to be definied in the execution script.
-
-(4) Random input - This can be combined with get_rand_I to select the neurons
-that receive this time dependent current. If the input is scaled by max_inp,
-the last argument in get_rand_I should be 1. Do not double scale input!
+(3) Random input - This can be combined with get_rand_I to select the neurons
+that receive this current.
 '''
 
 
@@ -168,8 +169,8 @@ for j in range(num_classes):
 #test_array = np.zeros(N_AL)
 #test_array[0] = 0.5
 #test_array[999] = 1.0
-#run the network
 
+# set tstart!
 tstart = reset_time*ms
 
 # Run random input with gradual current

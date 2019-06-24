@@ -17,7 +17,8 @@ total_data/connections/*
 !total_data/connections/connections.txt
 
 # ignore input data
-data_set/*
+data_set/MNIST/
+!data_set/designed_currents/current.dat
 
 # Ignore cache
 __pycache__/
@@ -30,7 +31,8 @@ test.py
 
 
 # Scriptes that are not yet ready to be uploaded!
-examples/
+examples/*
+!examples/AL_file_current.py
 
 # Where I store previous experiment data
 previous_experiments/
