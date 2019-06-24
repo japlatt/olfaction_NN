@@ -123,7 +123,7 @@ class n_lif:
 
     def eqs(self):
         eqns_KCs = '''
-                dv/dt = ((vr - v) + (I_synE-I_synI + I_inj) / nS) / taum  : volt (unless refractory)
+                dv/dt = ((vr - v) + (I_synE+I_synI + I_inj) / nS) / taum  : volt (unless refractory)
                 I_synE                       : amp
                 I_synI                       : amp
                 I_inj                        : amp
@@ -826,7 +826,7 @@ class s_gapjunc_in:
     def eqs(self):
         S = '''
              w : 1
-             I_synI_post = w*(v_pre - v_post)*nS : amp (summed)
+             I_synI_post = -w*(v_pre - v_post)*nS : amp (summed)
              '''
         return S
 

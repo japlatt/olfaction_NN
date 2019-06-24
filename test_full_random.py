@@ -45,6 +45,8 @@ lfp_syn = True
 
 #-----------------------------------------------------------
 #tunable params
+net = Network()
+
 tunable_params = pickle.load( open(prefix + "connections/tunable_params.p", "rb"))
 
 #size of network
@@ -142,12 +144,6 @@ conn_para = dict(synALKC_class = nm.s_lif_ex,
                  S_ALKC_conn = S_ALKC_conn,
                  S_KCBL_conn = S_KCBL_conn)
 # Current used
-I = ex.get_gradual_current()
-@network_operation()
-def f(t):
-    G_AL.I_inj = I
-
-net = Network(f)
 
 G_AL, S_AL, trace_AL, spikes_AL, G_LFP, S_LFP, trace_LFP = lm.get_AL(al_para, net, train = False)
 
@@ -174,22 +170,31 @@ pred_vec = []
 
 num_classes = np.shape(testing)[0]
 samples_per_class = 1
-tr = 20*ms
-tf=20*ms
-time_per_image = 100
-width = time_per_image*ms
-time_per_image = width + tr + tf
 tstart = 0*ms
 num_examples = int(num_classes*samples_per_class)
-# Random Input
 
+# Find some way to automate this?
+I = ex.get_gradual_current()
+G_run = G_AL.run_regularly('I_inj = {}'.format(I),dt = 0.02*ms)
+net.add(G_run)
+
+# Random Input
+@network_operation(dt = 10*ms)
+def f2(t):
+    print(G_AL.I_inj[0])
+net.add(f2)
 
 net.restore(name = 'trained', filename = prefix + 'connections/trained')
+
+# Adds a new spike monitor for counts
 spikes_BL_test = SpikeMonitor(G_BL)
 net.add(spikes_BL_test)
 
-tstart = trace_GGN.t[-1]
 
+# set to zero
+G_AL.active_ = 0.0
+net.run(20*ms)
+tstart = trace_GGN.t[-1]
 net.store(name = 'test')
 
 
@@ -198,7 +203,8 @@ for i in range(num_examples):
 
     print('After net.restore: {}'.format(spikes_BL_test.count[1]))
     G_AL.active_ = testing[i%num_classes,:]
-    net.run(time_per_image,report='text')
+    print(net.t)
+    net.run(time_per_image*ms,report='text')
 
     print('After running: {}'.format(spikes_BL_test.count[1]))
 

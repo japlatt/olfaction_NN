@@ -78,7 +78,7 @@ N_BL = 2 #should be the same as the number of classes
 
 #learning rate
 # 0.1
-eta = 0.001 #fraction of total conductance per spike
+eta = 0.1 #fraction of total conductance per spike
 
 """
 Amount of inhibition between AL Neurons.
@@ -99,7 +99,7 @@ ex_KCBL = 1.0
 
 #Lateral inhibition beta lobe
 #4
-in_BLBL = 4.0
+in_BLBL = 0.5
 
 
 #excitation KC->GGN
@@ -129,10 +129,10 @@ input_intensity = 0.3 #scale input
 reset_time = 30 #ms
 
 # needed for gradual current
-tr = 20*ms
-tf = 20*ms
-width = 100*ms
-max_inp = input_intensity*nA
+tr = 20*ms # rise time
+tf = 20*ms # fall time
+width = 100*ms # duration of constat input
+max_inp = input_intensity*nA # max current, can be just unit if amplitude is specified with active_
 
 # total run time, too lazy to change name
 time_per_image = (width + tr + tf)/ms
@@ -229,7 +229,6 @@ states = [G_AL, G_KC, G_GGN, G_BL]
 
 S_ALKC, S_KCGGN, S_GGNKC, S_KCBL = lm.connect_network(conn_para, states, net)
 
-
 #----------------------------------------------------------
 '''
 There are a few components to using a time dependent current.
@@ -237,11 +236,10 @@ There are a few components to using a time dependent current.
 (1) The string I. This is just a string which describes the function and units
 of the time dependent current.
 
-(2) The network_operation function. You define a function, f, which will update
-the current value based on that function (i.e. G. I_inj = I). You can specify how
-frequently you want the function to execute by specifying dt = time_you_want as
-an argument to network_operation. t must be an argument of the function. This
-function needs to be added to the network.
+(2) The run_regularly function. This exists in the namespace of the NeuronGroup
+you're adding it to. It can execute code strings at regular intervals. This
+object needs to be assigned a name and added to the network separately if the
+neuron group has previous been added.
 
 (3) Additional parameters: If there are any additional parameters in the string
 (rise time, fall time, etc), they need to be definied in the execution script.
@@ -254,17 +252,17 @@ the last argument in get_rand_I should be 1. Do not double scale input!
 
 # tr, tf, width, max_inp need to be defined
 I = ex.get_gradual_current()
-@network_operation()
-def f(t):
-    G_AL.I_inj = I
 
-net.add(f)
+
+# dt here can be smaller than default clock. This is dt of the data provided.
+G_run = G_AL.run_regularly('I_inj = {}'.format(I),dt = 0.05*ms)
+net.add(G_run)
 
 # troubleshooting function
-#@network_operation(dt=15*ms)
-#def f2(t):
-#    print(G_AL.I_inj[0])
-#net.add(f2)
+@network_operation(dt=5*ms)
+def f2(t):
+    print(G_AL.I_inj[0])
+net.add(f2)
 
 
 
@@ -278,6 +276,10 @@ X = np.zeros((num_classes,N_AL))
 for j in range(num_classes):
     X[j,:] = ex.get_rand_I(N_AL,p_inj,1)
 
+# troubleshooting array
+#test_array = np.zeros(N_AL)
+#test_array[0] = 0.5
+#test_array[999] = 1.0
 #run the network
 
 # Run random input with gradual current
@@ -287,54 +289,9 @@ for i in range(n_samples):
     net.run(reset_time*ms)
 
     G_AL.active_ = X[i%num_classes,:]
+    #G_AL.active_ = test_array
     net.run(time_per_image*ms, report='text')
     tstart = tstart + time_per_image*ms + reset_time*ms
-"""
-# Run random input
-for i in range(n_samples):
-    G_AL.I_inj = np.zeros(N_AL)*nA
-    net.run(reset_time*ms)
-
-    G_AL.I_inj = X[i%num_classes,:]*input_intensity*nA
-    net.run(time_per_image*ms, report='text')
-"""
-
-"""
-# Gaussian cluster run
-for i in range(n_samples):
-    G_AL.I_inj = np.zeros(N_AL)*nA
-    net.run(reset_time*ms)
-
-    G_AL.I_inj = X[i,:]*input_intensity*nA
-    net.run(time_per_image*ms, report='text')
-"""
-"""
-# MNIST Run
-
-j = 0
-for i in range(num_tot_images):
-    if labels[i][0] in numbers_to_inc:
-        print('image: ' + str(j))
-        j = j+1
-
-        #reset network
-        G_AL.I_inj = 0.0*np.ones(N_AL)*nA
-        net.run(reset_time*ms)
-
-        #right now creating binary image
-        rates = np.where(imgs[i%60000,:,:] > bin_thresh, 1, 0)*input_intensity
-        downsample = rates
-
-        linear = np.ravel(downsample)
-
-        padding = N_AL - n_input
-        I = np.pad(linear, (0,padding), 'constant', constant_values=(0,0))
-        G_AL.I_inj = I*nA
-
-        net.run(time_per_image*ms, report = 'text')
-    if j == num_examples:
-        break
-"""
 
 print('Simulation time: {0} seconds'.format(time.time()-t_sim))
 
