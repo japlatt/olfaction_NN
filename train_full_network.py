@@ -216,9 +216,8 @@ for i in range(num_tot_images):
         j = j+1
 
         #reset network
-        G_AL.I_inj = 0.0*np.ones(N_AL)*nA
+        G_AL.active_ = 0
         net.run(reset_time*ms)
-        print(G_AL.active)
 
         #right now creating binary image
         rates = np.where(imgs[i%60000,:,:] > bin_thresh, 1, 0)*input_intensity
@@ -229,6 +228,7 @@ for i in range(num_tot_images):
         padding = N_AL - n_input
         I = np.pad(linear, (0,padding), 'constant', constant_values=(0,0))
         G_AL.I_inj = I*nA
+	G_AL.active_ = 1
 
         net.run(time_per_image*ms, report = 'text')
     if j == num_examples:
