@@ -30,7 +30,7 @@ prefix = 'data/'
 #Antennal Lobe parameters
 al_para = dict(N = N_AL,
                g_syn = in_AL,
-               neuron_class = nm.n_FitzHugh_Nagumo, 
+               neuron_class = nm.n_FitzHugh_Nagumo,
                syn_class = nm.s_FitzHughNagumo_inh,
                PAL = PAL,
                mon = ['V']
@@ -40,6 +40,8 @@ al_para = dict(N = N_AL,
 net = Network()
 
 G_AL, S_AL, trace_AL, spikes_AL = lm.get_AL(al_para, net)
+# set just because
+G_AL.active_ = 1
 
 net.store()
 
