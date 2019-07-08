@@ -64,10 +64,11 @@ class n_FitzHugh_Nagumo:
         # use active to assign max amplitude and active neurons.
         eqns_AL = '''
                     I_inj : amp
-                    I_syn : 1
-                    dV/dt = (V-(V**3)/(3*mV**2) - w - z*(V - nu) + 0.35*mV + I_inj*active*Mohm)/t1 : volt
+                    I_synI : 1
+                    I_synE : 1
+                    dV/dt = (V-(V**3)/(3*mV**2) - w - z*(V - nu) + I_synE*mV + 0.35*mV + I_inj*active*Mohm)/t1 : volt
                     dw/dt = (V - b*w + a*mV)/ms : volt
-                    dz/dt = (I_syn - z)/t2 : 1
+                    dz/dt = (I_synI - z)/t2 : 1
                     active : 1
                     '''
         return eqns_AL
@@ -717,7 +718,7 @@ class s_FitzHughNagumo_inh:
     def eqs(self):
         syn = '''
                 g_syn: 1
-                I_syn_post = g_syn/(1.0+exp(-1000*V_pre/mV)): 1 (summed)
+                I_synI_post = g_syn/(1.0+exp(-1000*V_pre/mV)): 1 (summed)
                 '''
         return syn
 
