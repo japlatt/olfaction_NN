@@ -268,7 +268,7 @@ net.add(G_run)
 
 # random input
 num_classes = 3
-samples_per_class = 750
+samples_per_class = 1
 n_samples = int(samples_per_class*num_classes)
 
 p_inj = 0.3
@@ -285,10 +285,12 @@ scale_noise = 0.05
 # Run random input with gradual current
 for i in range(n_samples):
     # turns off all neurons
-    G_AL.scale = 0
+    G_AL.scale = 0.0
     net.run(reset_time*ms)
+    print('Ran reset')
 
     G_AL.scale = X[i%num_classes,:] + scale_noise*input_intensity*np.random.uniform(low=0,high=1,size=len(X[i%num_classes,:]))
+    print(G_AL.scale)
     #G_AL.active_ = test_array
     net.run(time_per_image*ms, report='text')
     tstart = tstart + time_per_image*ms + reset_time*ms

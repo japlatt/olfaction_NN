@@ -66,7 +66,7 @@ class n_FitzHugh_Nagumo:
                     I_inj : amp
                     I_synI : 1
                     I_synE : 1
-                    dV/dt = (V-(V**3)/(3*mV**2) - w - z*(V - nu) + I_synE*mV + 0.35*mV + I_inj*active*Mohm)/t1 : volt
+                    dV/dt = (V-(V**3)/(3*mV**2) - w - z*(V - nu) + I_synE*mV + 0.35*mV + I_inj*scale*Mohm)/t1 : volt
                     dw/dt = (V - b*w + a*mV)/ms : volt
                     dz/dt = (I_synI - z)/t2 : 1
                     scale : 1
@@ -100,8 +100,9 @@ class n_FitzHugh_Nagumo:
         return self.states_to_mon
 
     def init_cond(self):
-        # return  dict(V = '-rand()*mV', w = 'rand()*mV', z = 'rand()')
-        return  dict(V = '-1.2*mV', w = '0.6*mV', z = '0')
+        return  dict(V = '-rand()*mV', w = 'rand()*mV', z = 'rand()')
+        # These initial conditions cause errors
+        #return  dict(V = '-1.2*mV', w = '0.6*mV', z = '0')
 
 
 
