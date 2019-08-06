@@ -1125,3 +1125,4 @@ class s_LN_inh:
                 'r': 'rand()',
                 'ss': 'rand()',
                 'G': 'rand()*uM'}
+

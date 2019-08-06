@@ -20,6 +20,8 @@ total_data/connections/*
 data_set/MNIST/
 !data_set/designed_currents/current.dat
 
+
+
 # Ignore cache
 __pycache__/
 
@@ -28,6 +30,8 @@ scripts/
 
 # Test scripts
 test.py
+
+
 
 
 # Scriptes that are not yet ready to be uploaded!

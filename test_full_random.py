@@ -181,10 +181,10 @@ G_run = G_AL.run_regularly('I_inj = {}'.format(I),dt = 0.02*ms)
 net.add(G_run)
 
 # Random Input
-@network_operation(dt = 10*ms)
-def f2(t):
-    print(G_AL.I_inj[0])
-net.add(f2)
+#@network_operation(dt = 10*ms)
+#def f2(t):
+#    print(G_AL.I_inj[0])
+#net.add(f2)
 
 net.restore(name = 'trained', filename = prefix + 'connections/trained')
 
@@ -210,7 +210,7 @@ for j in range(num_classes):
 
     max_act = 0
     pred = -1
-    trains = spike_BL_test.spike_trains()
+    trains = spikes_BL_test.spike_trains()
     for k in range(len(trains)):
         if len(trains[k]) > max_act:
             pred = k
