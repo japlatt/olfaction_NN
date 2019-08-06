@@ -1,3 +1,4 @@
+from __future__ import division
 from brian2 import *
 
 import sys
@@ -11,7 +12,6 @@ from itertools import cycle
 
 import matplotlib.pyplot as plt
 
-from __future__ import division
 
 # plt.style.use('ggplot')
 
@@ -24,7 +24,7 @@ in_AL = .1
 PAL = 0.5
 
 inp = 0.15
-noise = 2.0
+noise = 0.1
 
 run_time = 100*ms
 
@@ -44,7 +44,7 @@ net = Network()
 
 G_AL, S_AL, trace_AL, spikes_AL = lm.get_AL(al_para, net)
 # set just because
-G_AL.active_ = 1
+G_AL.scale = 1
 
 net.store()
 
@@ -120,19 +120,22 @@ plt.show()
 
 # col = ['#f10c45','#069af3','#02590f','#ab33ff','#ff8c00','#ffd700']
 
-# fig1 = plt.figure()
-# plt.plot(spikes_t_arr[0]/ms, spikes_i_arr[0], '.', color = col[0])
-# plt.plot(spikes_t_arr[1]/ms, spikes_i_arr[1], '.', color = col[1])
-# plt.plot(spikes_t_arr[2]/ms, spikes_i_arr[2], '.', color = col[2])
-# plt.title('Hodgkin Huxley AL', fontsize = 22)
-# plt.xlabel('Time (ms)', fontsize = 16)
-# plt.ylabel('Neuron Number', fontsize = 16)
-# fig1.savefig('spikes_AL.pdf', bbox_inches = 'tight')
+fig1 = plt.figure()
+plt.plot(spikes_t_arr[0]/ms, spikes_i_arr[0], '.')
+plt.plot(spikes_t_arr[1]/ms, spikes_i_arr[1], '.')
+#plt.plot(spikes_t_arr[2]/ms, spikes_i_arr[2], '.')
+plt.title('Hodgkin Huxley AL', fontsize = 22)
+plt.xlabel('Time (ms)', fontsize = 16)
+plt.ylabel('Neuron Number', fontsize = 16)
+fig1.savefig('spikes_AL.pdf', bbox_inches = 'tight')
 
-# fig2 = plt.figure(figsize = (8, 6))
-# plt.plot(trace_t_arr[0]/ms, mean(trace_V_arr[0], axis = 0)/mV, linewidth = 2)
-# plt.title('LFP AL ' +str(N_AL)+' Neuron HH', fontsize = 22)
-# plt.xlabel('Time (ms)', fontsize = 16)
-# plt.ylabel('LFP (mV)', fontsize = 16)
-# plt.ylim(-50, -80)
-# fig2.savefig('lfp_AL.pdf', bbox_inches = 'tight')
+print(mean(trace_V_arr[0],axis=0))
+print(mean(trace_V_arr[1],axis=0))
+
+fig2 = plt.figure(figsize = (8, 6))
+plt.plot(trace_t_arr[0]/ms, mean(trace_V_arr[0], axis = 0)/mV, linewidth = 2)
+plt.title('LFP AL ' +str(N_AL)+' Neuron HH', fontsize = 22)
+plt.xlabel('Time (ms)', fontsize = 16)
+plt.ylabel('LFP (mV)', fontsize = 16)
+#plt.ylim(-50, -80)
+fig2.savefig('lfp_AL.pdf', bbox_inches = 'tight')
