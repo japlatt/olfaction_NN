@@ -69,7 +69,7 @@ class n_FitzHugh_Nagumo:
                     dV/dt = (V-(V**3)/(3*mV**2) - w - z*(V - nu) + I_synE*mV + 0.35*mV + I_inj*active*Mohm)/t1 : volt
                     dw/dt = (V - b*w + a*mV)/ms : volt
                     dz/dt = (I_synI - z)/t2 : 1
-                    active : 1
+                    scale : 1
                     '''
         return eqns_AL
 
@@ -1125,4 +1125,3 @@ class s_LN_inh:
                 'r': 'rand()',
                 'ss': 'rand()',
                 'G': 'rand()*uM'}
-

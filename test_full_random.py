@@ -194,7 +194,7 @@ net.add(spikes_BL_test)
 
 
 # set to zero
-G_AL.active_ = 0.0
+G_AL.scale = 0.0
 net.run(20*ms)
 tstart = trace_GGN.t[-1]
 net.store(name = 'test')
@@ -205,7 +205,7 @@ neuron_classes = []
 for j in range(num_classes):
     net.restore(name='test')
 
-    G_AL.active_ = testing[j,:]
+    G_AL.scale = testing[j,:]
     net.run(time_per_image*ms,report='text')
 
     max_act = 0
@@ -221,7 +221,7 @@ for i in range(num_examples):
     net.restore(name = 'test')
 
     print('After net.restore: {}'.format(spikes_BL_test.count[1]))
-    G_AL.active_ = testing[i%num_classes,:]
+    G_AL.scale = testing[i%num_classes,:]
     net.run(time_per_image*ms,report='text')
 
     print('After running: {}'.format(spikes_BL_test.count[1]))
