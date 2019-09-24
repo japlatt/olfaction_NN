@@ -74,11 +74,11 @@ numbers_to_inc = frozenset([0, 1])
 #size of network
 N_AL = 1000 #must be >= 784
 N_KC = 10000
-N_BL = 2 #should be the same as the number of classes
+N_BL = 3 #should be the same as the number of classes
 
 #learning rate
 # 0.1
-eta = 0.1 #fraction of total conductance per spike
+eta = 0.01 #fraction of total conductance per spike
 
 """
 Amount of inhibition between AL Neurons.
@@ -95,11 +95,11 @@ ex_ALKC = .25
 
 #excitation kenyon cells to beta lobes
 #1.5
-ex_KCBL = 1.0
+ex_KCBL = 0.5
 
 #Lateral inhibition beta lobe
 #4
-in_BLBL = 0.5
+in_BLBL = 1.0
 
 
 #excitation KC->GGN
@@ -122,7 +122,7 @@ PALKC = 0.02
 #0.3
 PKCBL = 0.3
 
-taupre = 20*ms #width of STDP
+taupre = 15*ms #width of STDP
 taupost = taupre
 
 input_intensity = 0.3 #scale input
@@ -131,7 +131,7 @@ reset_time = 30 #ms
 # needed for gradual current
 tr = 20*ms # rise time
 tf = 20*ms # fall time
-width = 100*ms # duration of constat input
+width = 150*ms # duration of constat input
 max_inp = input_intensity*nA # max current, can be just unit if amplitude is specified with active_
 
 # total run time, too lazy to change name
@@ -259,15 +259,15 @@ G_run = G_AL.run_regularly('I_inj = {}'.format(I),dt = 0.05*ms)
 net.add(G_run)
 
 # troubleshooting function
-@network_operation(dt=5*ms)
-def f2(t):
-    print(G_AL.I_inj[0])
-net.add(f2)
+#@network_operation(dt=5*ms)
+#def f2(t):
+#    print(G_AL.I_inj[0])
+#net.add(f2)
 
 
 
 # random input
-num_classes = 2
+num_classes = 3
 samples_per_class = 1
 n_samples = int(samples_per_class*num_classes)
 
@@ -281,14 +281,16 @@ for j in range(num_classes):
 #test_array[0] = 0.5
 #test_array[999] = 1.0
 #run the network
-
+scale_noise = 0.05
 # Run random input with gradual current
 for i in range(n_samples):
     # turns off all neurons
-    G_AL.active_ = 0
+    G_AL.scale = 0.0
     net.run(reset_time*ms)
+    print('Ran reset')
 
-    G_AL.active_ = X[i%num_classes,:]
+    G_AL.scale = X[i%num_classes,:] + scale_noise*input_intensity*np.random.uniform(low=0,high=1,size=len(X[i%num_classes,:]))
+    print(G_AL.scale)
     #G_AL.active_ = test_array
     net.run(time_per_image*ms, report='text')
     tstart = tstart + time_per_image*ms + reset_time*ms

@@ -196,6 +196,7 @@ for i in range(num_tot_images):
 
         padding = N_AL - n_input
         I = np.pad(linear, (0,padding), 'constant', constant_values=(0,0))
+	G_AL.scale = 1
         G_AL.I_inj = I*nA
 
         net.run(time_per_image*ms, report = 'text')

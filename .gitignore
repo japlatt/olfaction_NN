@@ -1,4 +1,6 @@
 # Ignore files in these folders except the .txt file that allows for pushing to github
+.gitignore
+
 
 # run directory for compiling in C++
 total_data/run_dir/*
@@ -19,6 +21,7 @@ total_data/connections/*
 # ignore input data
 data_set/MNIST/
 !data_set/designed_currents/current.dat
+data_set/MNIST_CSV/
 
 # Ignore cache
 __pycache__/
@@ -28,6 +31,8 @@ scripts/
 
 # Test scripts
 test.py
+
+
 
 
 # Scriptes that are not yet ready to be uploaded!

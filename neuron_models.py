@@ -64,11 +64,12 @@ class n_FitzHugh_Nagumo:
         # use active to assign max amplitude and active neurons.
         eqns_AL = '''
                     I_inj : amp
-                    I_syn : 1
-                    dV/dt = (V-(V**3)/(3*mV**2) - w - z*(V - nu) + 0.35*mV + I_inj*active*Mohm)/t1 : volt
+                    I_synI : 1
+                    I_synE : 1
+                    dV/dt = (V-(V**3)/(3*mV**2) - w - z*(V - nu) + I_synE*mV + 0.35*mV + I_inj*scale*Mohm)/t1 : volt
                     dw/dt = (V - b*w + a*mV)/ms : volt
-                    dz/dt = (I_syn - z)/t2 : 1
-                    active : 1
+                    dz/dt = (I_synI - z)/t2 : 1
+                    scale : 1
                     '''
         return eqns_AL
 
@@ -99,8 +100,9 @@ class n_FitzHugh_Nagumo:
         return self.states_to_mon
 
     def init_cond(self):
-        # return  dict(V = '-rand()*mV', w = 'rand()*mV', z = 'rand()')
-        return  dict(V = '-1.2*mV', w = '0.6*mV', z = '0')
+        return  dict(V = '-rand()*mV', w = 'rand()*mV', z = 'rand()')
+        # These initial conditions cause errors
+        #return  dict(V = '-1.2*mV', w = '0.6*mV', z = '0')
 
 
 
@@ -717,7 +719,7 @@ class s_FitzHughNagumo_inh:
     def eqs(self):
         syn = '''
                 g_syn: 1
-                I_syn_post = g_syn/(1.0+exp(-1000*V_pre/mV)): 1 (summed)
+                I_synI_post = g_syn/(1.0+exp(-1000*V_pre/mV)): 1 (summed)
                 '''
         return syn
 

@@ -155,22 +155,38 @@ def plotPCA3D(PCAdata, N, title, el = 30, az = 30, skip = 1, start = 50):
 
 
     fig = plt.figure(figsize = (10,7))
-    ax = fig.gca(projection='3d')
-    # c = next(cycol)
-    # m = next(marker)
 
-    # Turn off tick labels
-    ax.set_yticklabels([])
-    ax.set_xticklabels([])
-    ax.set_zticklabels([])
+    if  PCAdata[0][0,:].shape == 3:
+        ax = fig.gca(projection='3d')
+        # c = next(cycol)
+        # m = next(marker)
 
-    ax.grid(False)
+        # Turn off tick labels
+        ax.set_yticklabels([])
+        ax.set_xticklabels([])
+        ax.set_zticklabels([])
 
-    for j in range(len(PCAdata)):
-        ax.scatter(PCAdata[j][start:,0][::skip],
-                   PCAdata[j][start:,1][::skip],
-                   PCAdata[j][start:,2][::skip],
-                   s=10)
+        ax.grid(False)
+
+        for j in range(len(PCAdata)):
+            ax.scatter(PCAdata[j][start:,0][::skip],
+                       PCAdata[j][start:,1][::skip],
+                       PCAdata[j][start:,2][::skip],
+                       s=10)
+    else:
+        ax = fig.gca()
+
+        ax.set_yticklabels([])
+        ax.set_xticklabels([])
+
+        ax.grid(False)
+
+        for j in range(len(PCAdata)):
+            ax.scatter(PCAdata[j][start:,0][::skip],
+                       PCAdata[j][start:,1][::skip],
+                       s=10)
+
+
         # c = next(cycol)
         # m = next(marker)
 
@@ -179,7 +195,8 @@ def plotPCA3D(PCAdata, N, title, el = 30, az = 30, skip = 1, start = 50):
 
     # plt.axis('off')
     plt.title(title, fontsize = 22)
-    ax.view_init(elev = el, azim = az)
+    if PCAdata[0][0,:].shape == 3:
+        ax.view_init(elev = el, azim = az)
     ax.figure.savefig(title + '.pdf', bbox_inches = 'tight')
     # ax.figure.savefig('PCA_' + str(N) + '.png', bbox_inches = 'tight', dpi = 400)
     # plt.show()
@@ -241,7 +258,7 @@ def plotInCA(InCAData, N, start = 400):
     name = [inca1, inca2, inca3]
     for j in range(3):
         ax.scatter(name[j][start:,0], name[j][start:,1], name[j][start:,2],
-                   s=10)#, 
+                   s=10)#,
                    # color = c,
                    # marker = m)
         # c = next(cycol)
@@ -256,4 +273,3 @@ def calc_MI(X, Y, bins):
     c_xy = np.histogram2d(X, Y, bins)[0]
     MI = mutual_info_score(None, None, contingency=c_xy)
     return MI
-

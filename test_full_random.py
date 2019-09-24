@@ -1,5 +1,7 @@
 from __future__ import print_function
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import sys
 
@@ -87,11 +89,11 @@ PKCBL = tunable_params['PKCBL']
 
 
 input_intensity = tunable_params['input_intensity'] #scale input
-time_per_image = tunable_params['time_per_image'] #ms
+time_per_image = tunable_params['time_per_image']
 reset_time = tunable_params['reset_time'] #ms
-width = tunable_params['width']
-tr = tunable_params['tr']
-tf = tunable_params['tf']
+width = tunable_params['width'] #ms
+tr = tunable_params['tr'] #ms
+tf = tunable_params['tf'] #ms
 max_inp = input_intensity*nA
 
 taupre = tunable_params['taupre'] #width of STDP
@@ -179,10 +181,10 @@ G_run = G_AL.run_regularly('I_inj = {}'.format(I),dt = 0.02*ms)
 net.add(G_run)
 
 # Random Input
-@network_operation(dt = 10*ms)
-def f2(t):
-    print(G_AL.I_inj[0])
-net.add(f2)
+#@network_operation(dt = 10*ms)
+#def f2(t):
+#    print(G_AL.I_inj[0])
+#net.add(f2)
 
 net.restore(name = 'trained', filename = prefix + 'connections/trained')
 
@@ -192,30 +194,46 @@ net.add(spikes_BL_test)
 
 
 # set to zero
-G_AL.active_ = 0.0
+G_AL.scale = 0.0
 net.run(20*ms)
 tstart = trace_GGN.t[-1]
 net.store(name = 'test')
 
+neuron_classes = []
+
+# Set the neurons for each class by running a test
+for j in range(num_classes):
+    net.restore(name='test')
+
+    G_AL.scale = testing[j,:]
+    net.run(time_per_image*ms,report='text')
+
+    max_act = 0
+    pred = -1
+    trains = spikes_BL_test.spike_trains()
+    for k in range(len(trains)):
+        if len(trains[k]) > max_act:
+            pred = k
+            max_act = len(trains[k])
+    neuron_classes.append(pred)
 
 for i in range(num_examples):
     net.restore(name = 'test')
 
     print('After net.restore: {}'.format(spikes_BL_test.count[1]))
-    G_AL.active_ = testing[i%num_classes,:]
-    print(net.t)
+    G_AL.scale = testing[i%num_classes,:]
     net.run(time_per_image*ms,report='text')
 
     print('After running: {}'.format(spikes_BL_test.count[1]))
 
     max_act = 0
     pred = -1
-    trains = spikes_BL.spike_trains()
+    trains = spikes_BL_test.spike_trains()
     for k in range(len(trains)):
         if len(trains[k]) > max_act:
             pred = k
             max_act = len(trains[k])
-    pred_vec.append((i%num_classes, pred))
+    pred_vec.append((neuron_classes[i%num_classes], pred))
 
 # run if built in C++ standalone
 if comp:
