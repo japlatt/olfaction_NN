@@ -292,7 +292,7 @@ class n_Projection_Neuron:
         eqns_PN = '''
                     dV/dt = -1/C_m*(g_L*(V - E_L) + g_Na*m**3*h*(V - E_Na) \
                             + g_K*n*(V - E_K)- I_inj \
-                            + g_A*z**4*u*(V - E_K)  + g_KL*(V - E_K) - I_inj + I_syn_inh): volt
+                            + g_A*z**4*u*(V - E_K)  + g_KL*(V - E_K) + I_syn_inh): volt
 
                     I_syn_inh: amp
                     I_inj: amp
