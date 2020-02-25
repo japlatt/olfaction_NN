@@ -288,25 +288,26 @@ class n_Projection_Neuron:
     def __init__(self, mon):
         self.states_to_mon = mon
         return
-
     def eqs(self):
         eqns_PN = '''
                     dV/dt = -1/C_m*(g_L*(V - E_L) + g_Na*m**3*h*(V - E_Na) \
-                            + g_K*n*(V - E_K) + g_A*z**4*u*(V - E_K)  + g_KL*(V - E_K) - I_inj*active + I_syn_inh): volt
-                    I_inj: amp
-                    active: 1
+                            + g_K*n*(V - E_K)- I_inj \
+                            + g_A*z**4*u*(V - E_K)  + g_KL*(V - E_K) + I_syn_inh): volt
+
                     I_syn_inh: amp
+                    I_inj: amp
+
 
                     dm/dt = (xm-m)/tm : 1
                     xm = 0.5*(1 - tanh(0.5*(V - vm)/dvm)) : 1
-                    tm = tm0+tm1*(1-tanh((V - vm)/dvm)**2) : second
+                    tm = tm0+tm1*(1-tanh((V - vmt)/dvmt)**2) : second
 
                     dh/dt = (xh-h)/th : 1
                     xh = 0.5*(1-tanh(0.5*(V - vh)/dvh)) : 1
-                    th = th0+th1*(1-tanh((V - vh)/dvh)**2): second
+                    th = th0+th1*(1-tanh((V - vht)/dvht)**2): second
 
                     dn/dt = an*(1-n) - bn*n : 1
-                    an = can*(V - van + shift)/(1-exp(-(V-van)/san)) : 1/second
+                    an = can*(V - van + shift)/(1-exp(-(V-van+shift)/san)) : 1/second
                     bn = cbn*exp(-(V - vbn + shift)/sbn) : 1/second
 
                     dz/dt = (xz - z)/tz : 1
