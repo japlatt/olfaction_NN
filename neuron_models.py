@@ -288,15 +288,6 @@ class n_Projection_Neuron:
     def __init__(self, mon):
         self.states_to_mon = mon
         return
-    # + g_A*z**4*u*(V - E_K)  + g_KL*(V - E_K) - I_inj*active + I_syn_inh): volt
-                   # I_syn_inh: amp
-                    # dz/dt = (xz - z)/tz : 1
-                    # xz = 0.5*(1-tanh(0.5*(V-vz)/dvz)) : 1
-                    # tz = 1*ms/(exp((V-tzv1)/tzd1) + exp(-(V-tzv1)/tzd2) + 0.37) : second
-                    #
-                    # du/dt = (xu - u)/tu : 1
-                    # xu = 0.5*(1-tanh(0.5*(V - vu)/dvu)) : 1
-                    # tu = ctu1/(exp((V-tuv1)/tud1) + exp(-(V-tuv2)/tud2)) + ctu2/2*(1+tanh((V-tuv3)/tud3)) : second
     def eqs(self):
         eqns_PN = '''
                     dV/dt = -1/C_m*(g_L*(V - E_L) + g_Na*m**3*h*(V - E_Na) \
